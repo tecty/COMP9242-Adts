@@ -1,8 +1,5 @@
 #include <stdint.h>
 
-/**
- * Page is a virtual frame
- */
 
 // for the null page
 #define NULL_PAGE ((uint32_t)0)
