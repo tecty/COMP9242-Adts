@@ -43,15 +43,15 @@ void DynamicArrOne__free(DynamicArrOne_t da){
 
 
 
-// typedef struct
-// {
-//     size_t end_stamp;
-//     size_t callback;
-//     void * data; 
-//     // if someone want to disable some clock
-//     // this is the word 
-//     bool enabled;
-// } Timer_t;
+typedef struct
+{
+    size_t end_stamp;
+    size_t callback;
+    void * data; 
+    // if someone want to disable some clock
+    // this is the word 
+    bool enabled;
+} Timer_t;
 
 
 // int main(int argc, char const *argv[])

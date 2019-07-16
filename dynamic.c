@@ -29,10 +29,11 @@ DynamicArr_t DynamicArr__init(size_t item_size){
     // create the dynamic arr 
     ret-> item_arr      = malloc(ret->length * item_size);
     ret-> item_occupied = malloc(ret->length* sizeof(bool));
-        for (size_t i = 0; i < ret->length; i++)
+    for (size_t i = 0; i < ret->length; i++)
     {
         ret->item_occupied[i] = false;
     }
+    
 
     return ret;
 }
@@ -41,7 +42,6 @@ void * DynamicArr__alloc(DynamicArr_t da, size_t * id){
     if (da->alloced == da-> length - 2){
         // double the size, pre_alloc to improve searching
         da->length *= 2;
-        // TODO: these could fault
         da->item_occupied = realloc(da->item_occupied, da->length * sizeof(bool));
         da->item_arr      = realloc(da->item_arr     , da->length * da->item_size);
         for (size_t i = da->length/2; i < da->length; i++)
@@ -50,44 +50,50 @@ void * DynamicArr__alloc(DynamicArr_t da, size_t * id){
             da->item_occupied[i] = false;
         }
     }
+
+
     while (da->item_occupied[da->tail] == true)
     {
         DynamicArr__incTail(da);
     }
-    
-    // give return id 
-    * id = da->tail + 1 ;
-    // mark allocated 
-    da->alloced ++; da->item_occupied[da->tail] = true;
-    DynamicArr__incTail(da);
 
-    // return the addr 
-    return DynamicArr__get(da, *id); 
+    *id = da->tail;
+    da->item_occupied[da->tail] = true;
+    da->alloced ++; 
+
+    DynamicArr__incTail(da);
+    return DynamicArr__get(da, *id);
 }
+
 
 /**
  * @ret: the id to the inside managed strcuture 
  */
 size_t DynamicArr__add(DynamicArr_t da,void * data){
     size_t id;
-    void * dest = DynamicArr__alloc(da, &id);
-    memcpy(dest, data, da->item_size);
+    // store the new item here 
+    memcpy (DynamicArr__alloc(da, &id), data, da->item_size);
+    // some routine to maintain the data intergity
     return id;
 }
 
 void * DynamicArr__get(DynamicArr_t da, size_t index){
     // return null to indecate this item is delted 
-    if (index != 0 && da->item_occupied[index - 1] == false ){
+    if (da->item_occupied[index] == false ){
         return NULL;
     }
-    return da->item_arr + (index - 1) * da->item_size;
+    return da->item_arr + index * da->item_size;
 }
 
 void DynamicArr__del(DynamicArr_t da, size_t index){
-    if (index != 0 && da->item_occupied[index - 1] == true){
-        da->item_occupied[index - 1] = false;
+    if (da->item_occupied[index] == true){
+        da->item_occupied[index] = false;
         da->alloced --;
     } 
+}
+
+size_t DynamicArr__getAlloced(DynamicArr_t da){
+    return da->alloced;
 }
 
 void DynamicArr__free(DynamicArr_t da){
@@ -95,6 +101,7 @@ void DynamicArr__free(DynamicArr_t da){
     free(da->item_occupied);
     free(da);
 }
+
 
 
 // typedef struct
@@ -122,7 +129,7 @@ void DynamicArr__free(DynamicArr_t da){
 
 //     for (size_t i = 0; i < 10; i++)
 //     {
-//         Timer_t * stored_timer  = DynamicArr__get(dat,i + 1);
+//         Timer_t * stored_timer  = DynamicArr__get(dat,i);
 //         assert(stored_timer->end_stamp == i);
 //         assert(stored_timer->callback == i*2);
 //     }
