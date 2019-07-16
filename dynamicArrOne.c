@@ -1,21 +1,12 @@
-#include "dynamic.h"
+#include "dynamicArrOne.h"
 
 // not required 
-#include <stdbool.h>
-#include <assert.h>
+// #include <stdbool.h>
+// #include <assert.h>
+
 /**
  * This dynamic arr always has one is invalid 
  */
-
-typedef DynamicArr_t DynamicArrOne_t ;
-
-DynamicArrOne_t DynamicArrOne__init(size_t item_size);
-void * DynamicArrOne__alloc(DynamicArrOne_t da, size_t * id);
-size_t DynamicArrOne__add(DynamicArrOne_t da,void * data);
-void * DynamicArrOne__get(DynamicArrOne_t da, size_t index);
-void DynamicArrOne__del(DynamicArrOne_t da, size_t index);
-void DynamicArrOne__free(DynamicArrOne_t da);
-
 
 DynamicArrOne_t DynamicArrOne__init(size_t item_size){
     return DynamicArr__init(item_size);
@@ -43,15 +34,15 @@ void DynamicArrOne__free(DynamicArrOne_t da){
 
 
 
-typedef struct
-{
-    size_t end_stamp;
-    size_t callback;
-    void * data; 
-    // if someone want to disable some clock
-    // this is the word 
-    bool enabled;
-} Timer_t;
+// typedef struct
+// {
+//     size_t end_stamp;
+//     size_t callback;
+//     void * data; 
+//     // if someone want to disable some clock
+//     // this is the word 
+//     bool enabled;
+// } Timer_t;
 
 
 // int main(int argc, char const *argv[])
