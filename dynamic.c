@@ -97,78 +97,78 @@ void DynamicArr__free(DynamicArr_t da){
 }
 
 
-typedef struct
-{
-    size_t end_stamp;
-    size_t callback;
-    void * data; 
-    // if someone want to disable some clock
-    // this is the word 
-    bool enabled;
-} Timer_t;
+// typedef struct
+// {
+//     size_t end_stamp;
+//     size_t callback;
+//     void * data; 
+//     // if someone want to disable some clock
+//     // this is the word 
+//     bool enabled;
+// } Timer_t;
 
 
-int main(int argc, char const *argv[])
-{
-    DynamicArr_t dat = DynamicArr__init(sizeof(Timer_t));
-    Timer_t timer;
-    for (size_t i = 0; i < 10; i++)
-    {
-        timer.end_stamp = i;
-        timer.callback = i*2;
-        DynamicArr__add(dat,&timer);
-    }
+// int main(int argc, char const *argv[])
+// {
+//     DynamicArr_t dat = DynamicArr__init(sizeof(Timer_t));
+//     Timer_t timer;
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = i*2;
+//         DynamicArr__add(dat,&timer);
+//     }
     
 
-    for (size_t i = 0; i < 10; i++)
-    {
-        Timer_t * stored_timer  = DynamicArr__get(dat,i + 1);
-        assert(stored_timer->end_stamp == i);
-        assert(stored_timer->callback == i*2);
-    }
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         Timer_t * stored_timer  = DynamicArr__get(dat,i + 1);
+//         assert(stored_timer->end_stamp == i);
+//         assert(stored_timer->callback == i*2);
+//     }
     
-    size_t ids[10];
-    for (size_t i = 0; i < 10; i++)
-    {
-        timer.end_stamp = i;
-        timer.callback = i*2;
-        ids[i] = DynamicArr__add(dat,&timer);
-    }
+//     size_t ids[10];
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = i*2;
+//         ids[i] = DynamicArr__add(dat,&timer);
+//     }
     
-    DynamicArr__del(dat, ids[2]);
-    DynamicArr__del(dat, ids[5]);
-    DynamicArr__del(dat, ids[7]);
+//     DynamicArr__del(dat, ids[2]);
+//     DynamicArr__del(dat, ids[5]);
+//     DynamicArr__del(dat, ids[7]);
 
-    bool has_zero = false;
+//     bool has_zero = false;
 
 
-    size_t skipped= 0;
+//     size_t skipped= 0;
 
-    for (size_t i = 0; i < 10; i++)
-    {
-        Timer_t * stored_timer  = DynamicArr__get(dat,ids[i]);
-        if (stored_timer == NULL){
-            skipped ++;
-            continue;
-        }
-        assert(stored_timer->end_stamp == i);
-        assert(stored_timer->callback == i*2);
-    }
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         Timer_t * stored_timer  = DynamicArr__get(dat,ids[i]);
+//         if (stored_timer == NULL){
+//             skipped ++;
+//             continue;
+//         }
+//         assert(stored_timer->end_stamp == i);
+//         assert(stored_timer->callback == i*2);
+//     }
     
-    assert(skipped == 3);
+//     assert(skipped == 3);
 
-    for (size_t i = 0; i < 100; i++)
-    {
-        timer.end_stamp = i;
-        timer.callback = i*2;
-        size_t id = DynamicArr__add(dat,&timer);
-        Timer_t * stored_timer =  DynamicArr__get(dat, id);
-        assert(stored_timer->end_stamp == i);
-        assert(stored_timer->callback == i*2);
-    }
+//     for (size_t i = 0; i < 100; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = i*2;
+//         size_t id = DynamicArr__add(dat,&timer);
+//         Timer_t * stored_timer =  DynamicArr__get(dat, id);
+//         assert(stored_timer->end_stamp == i);
+//         assert(stored_timer->callback == i*2);
+//     }
 
 
 
-    /* code */
-    return 0;
-}
+//     /* code */
+//     return 0;
+// }
