@@ -1,7 +1,6 @@
 
 #if !defined(DYNAMIC_ARR_ONE_H)
 #define DYNAMIC_ARR_ONE_H
-
 #include "dynamic.h"
 
 typedef DynamicArr_t DynamicArrOne_t ;
