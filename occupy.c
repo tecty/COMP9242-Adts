@@ -102,35 +102,34 @@ int Occupy__set(Occupy_t oct, unsigned long long pos, int val){
     }
 }
 
-#include <stdio.h>
-#include <assert.h>
+// #include <stdio.h>
+// #include <assert.h>
 
-
-int main(int argc, char const *argv[])
-{
-    /* code */
-    // printf("I have got the bit is zero %d\n", ffsll(~0));
-    // printf("I have got the bit is zero %d\n", ffsll(1<< 2));
-    // oct test 
-    Occupy_t oct = Occupy__init();
-    size_t id = Occupy__alloc(oct);
-    assert(id != 0);
-    assert(Occupy__get(oct, id)== 0);
-    assert(Occupy__set(oct, id, 1) == 1);
-    assert(Occupy__get(oct, id)== 1);
+// int main(int argc, char const *argv[])
+// {
+//     /* code */
+//     // printf("I have got the bit is zero %d\n", ffsll(~0));
+//     // printf("I have got the bit is zero %d\n", ffsll(1<< 2));
+//     // oct test 
+//     Occupy_t oct = Occupy__init();
+//     size_t id = Occupy__alloc(oct);
+//     assert(id != 0);
+//     assert(Occupy__get(oct, id)== 0);
+//     assert(Occupy__set(oct, id, 1) == 1);
+//     assert(Occupy__get(oct, id)== 1);
 
     
-    size_t ids[1 << 12];
-    for (size_t i = 0; i < 1 << 12; i++)
-    {
-        ids[i] = Occupy__alloc(oct);
-        Occupy__set(oct, ids[i] , i % 2);
-    }
+//     size_t ids[1 << 12];
+//     for (size_t i = 0; i < 1 << 12; i++)
+//     {
+//         ids[i] = Occupy__alloc(oct);
+//         Occupy__set(oct, ids[i] , i % 2);
+//     }
     
-    for (size_t i = 0; i < 1 << 12; i++)
-    {
-        assert(Occupy__get(oct, ids[i] ) == (int) i % 2);
-    }
+//     for (size_t i = 0; i < 1 << 12; i++)
+//     {
+//         assert(Occupy__get(oct, ids[i] ) == (int) i % 2);
+//     }
 
-    return 0;
-}
+//     return 0;
+// }

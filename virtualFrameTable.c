@@ -1,7 +1,8 @@
 #include "doubleLinkList.h"
 #include "dynamicQ.h"
+#include "occupy.h"
 
-typedef struct virtualFrameTable_s * virtualFrameTable_t;
+typedef struct VirtualFrameTable_s * VirtualFrameTable_t;
 
 
 typedef struct __attribute__((__packed__)) 
@@ -10,7 +11,7 @@ typedef struct __attribute__((__packed__))
     char copy_on_write: 1;
     char mapped: 1;
     uint32_t cap;
-} virtualFrame_t
+} virtualFrame_t;
 
 typedef struct __attribute__((__packed__)) 
 {
@@ -29,62 +30,65 @@ typedef struct __attribute__((__packed__))
     
 } mapContext_t;
 
-struct virtualFrameTable_s
+struct VirtualFrameTable_s
 {
     DoubleLinkList_t virtual_table;
     DynamicArrOne_t frame_table;
+    Occupy_t disk_table;
 };
 
-virtualFrameTable_t virtualFrameTable__init(){
-    virtualFrameTable_t ret = malloc(sizeof(struct virtualFrameTable_s));
+VirtualFrameTable_t VirtualFrameTable__init(){
+    VirtualFrameTable_t ret = malloc(sizeof(struct VirtualFrameTable_s));
     ret->virtual_table = DoubleLinkList__init();
     ret->frame_table = DynamicArrOne__init(sizeof(uint64_t));
+    ret->disk_table = Occupy__init();
     return ret;
 }
 
-void virtualFrameTable__free(virtualFrameTable_t vft){
+void VirtualFrameTable__free(VirtualFrameTable_t vft){
     DoubleLinkList__free(vft->virtual_table);
     DynamicArrOne__free(vft->frame_table);
+    Occupy__free(vft->disk_table);
 }
 
-void * virtualFrameTable__getVaddrByVfref(
-    virtualFrameTable_t vft, uint32_t vfref
+void * VirtualFrameTable__getVaddrByVfref(
+    VirtualFrameTable_t vft, uint32_t vfref
 ){
 
 }
 
-void virtualFrameTable__pinFrame(
-    virtualFrameTable_t vft, uint32_t vfref
+void VirtualFrameTable__pinFrame(
+    VirtualFrameTable_t vft, uint32_t vfref
 ){
 
 }
 
-void virtualFrameTable__unpinFrame(
-    virtualFrameTable_t vft, uint32_t vfref
+void VirtualFrameTable__unpinFrame(
+    VirtualFrameTable_t vft, uint32_t vfref
 ){
 
 }
 
-void virtualFrameTable__pinFrameQ(
-    virtualFrameTable_t vft, DynamicQ_t  vfrefq
+void VirtualFrameTable__pinFrameQ(
+    VirtualFrameTable_t vft, DynamicQ_t  vfrefq
 ){
 
 }
 
-void virtualFrameTable__unpinFrameQ(
-    virtualFrameTable_t vft, DynamicQ_t vfrefq
+void VirtualFrameTable__unpinFrameQ(
+    VirtualFrameTable_t vft, DynamicQ_t vfrefq
 ){
 
 }
 
-mapContext_t virtualFrameTable__getMapContext(
-    virtualFrameTable_t vft, uint32_t faultType
+mapContext_t VirtualFrameTable__getMapContext(
+    VirtualFrameTable_t vft, uint32_t faultType
 ){
 
 }
 
-uint32_t virtualFrameTable__getPinableCount(
-    virtualFrameTable_t vft
+uint32_t VirtualFrameTable__getPinableCount(
+    VirtualFrameTable_t vft
 ){
 
 }
