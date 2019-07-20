@@ -16,7 +16,7 @@ void SleepQ__init(){
     SleepQ_s.sleeping = DynamicQ__init(sizeof(coro));
 }
 
-void SleepQ__tryWake(){
+int SleepQ__tryWake(){
     if (! DynamicQ__isEmpty(SleepQ_s.sleeping)){
         // there's waiting thread 
         coro target = *(coro *) DynamicQ__first(SleepQ_s.sleeping);
@@ -24,7 +24,9 @@ void SleepQ__tryWake(){
         // wake the thead and dequeue it 
         resume(target, NULL);
         DynamicQ__deQueue(SleepQ_s.sleeping);
+        return 1;
     }
+    return 0;
 }
 
 /**
@@ -68,9 +70,9 @@ int main(int argc, char const *argv[])
     for (size_t i = 0; i < 10; i++)
     {
         printf("I want to wake up threads %u\n", i);
-        SleepQ__tryWake();
+        if(!SleepQ__tryWake()) break;
     }
-    
+    printf("end early\n");
 
     return 0;
 }

@@ -10,6 +10,8 @@ typedef uint64_t (* doubleLinkList_callback_t)(uint64_t data);
 
 
 DoubleLinkList_t DoubleLinkList__init();
+void DoubleLinkList__free(DoubleLinkList_t dll);
+
 uint32_t DoubleLinkList__add(DoubleLinkList_t dll, uint64_t data);
 uint32_t DoubleLinkList__link(
     DoubleLinkList_t dll, uint32_t first, uint32_t second

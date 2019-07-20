@@ -5,5 +5,5 @@
  */
 
 void SleepQ__init();
-void SleepQ__tryWake();
+int SleepQ__tryWake();
 void SleepQ__sleep();

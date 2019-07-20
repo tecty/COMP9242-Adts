@@ -27,6 +27,9 @@ typedef struct Node_s
 DoubleLinkList_t DoubleLinkList__init(){
     return DynamicArrOne__init(sizeof(struct Node_s));
 }
+void DoubleLinkList__free(DoubleLinkList_t dll){
+    DynamicArrOne__free(dll);
+}
 
 uint32_t DoubleLinkList__add(DoubleLinkList_t dll, uint64_t data){
     struct Node_s curr = {
