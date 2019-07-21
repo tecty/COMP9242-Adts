@@ -76,22 +76,13 @@ uint32_t DoubleLinkList__link(
     return second;
 }
 
-/**
- * @ret: the candidate root 
- * if it deleted a root node, I will give back some track to let
- * to find this link
- */
-uint32_t DoubleLinkList__del(DoubleLinkList_t dll, uint32_t index){
+uint32_t DoubleLinkList__delink(DoubleLinkList_t dll, uint32_t index){
     Node_t curr = DynamicArrOne__get(dll, index);
     // nothing I can do 
     if (curr == NULL) return NULL_SLOT;
 
     Node_t prev_node = DynamicArrOne__get(dll, curr->prev);    
     Node_t next_node = DynamicArrOne__get(dll, curr->next);
-
-    // printf("\nI will delete %u ", index);
-    // dump_node(curr);
-    // the candidat root id;
     uint32_t ret = NULL_SLOT; 
     if (next_node) {
         next_node->prev = curr->prev;
@@ -103,12 +94,25 @@ uint32_t DoubleLinkList__del(DoubleLinkList_t dll, uint32_t index){
         prev_node->next = curr->next;
         // printf("prev:\t");
         // dump_node(prev_node);
-        // ret = curr->prev;
+        ret = curr->prev;
     }
 
+    return ret;
+}
+
+
+/**
+ * @ret: the candidate root 
+ * if it deleted a root node, I will give back some track to let
+ * to find this link
+ */
+uint32_t DoubleLinkList__del(DoubleLinkList_t dll, uint32_t index){
+    Node_t curr = DynamicArrOne__get(dll, index);
+    // nothing I can do 
+    if (curr == NULL) return NULL_SLOT;
+    uint32_t ret = DoubleLinkList__delink(dll, index);
     // this node can be savely deleted 
     DynamicArrOne__del(dll, index);
-    
     return ret;
 }
 

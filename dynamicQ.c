@@ -3,7 +3,6 @@
 // not required 
 #include <assert.h>
 #include <stdio.h>
-
 typedef struct DynamicQ_s
 {
     void * item_arr;
@@ -39,6 +38,7 @@ DynamicQ_t DynamicQ__init(uint64_t item_size){
 
 void DynamicQ__enQueue(DynamicQ_t dq,void * data){
     if (dq->alloced == dq-> length - 2){
+        // printf("DynamicQ is resizing\n");
         // double the size, pre_alloc to improve searching
         dq->length *= 2;
         dq->item_arr      = realloc(dq->item_arr, dq->length* dq->item_size);
@@ -85,19 +85,23 @@ void DynamicQ__deQueue(DynamicQ_t dq){
     DynamicQ__incHead(dq);
 }
 
+size_t DynamicQ__getAlloced(DynamicQ_t dq){
+    return dq->alloced;
+}
+
 void DynamicQ__free(DynamicQ_t dq){
     free(dq->item_arr);
     free(dq);
 }
 
-typedef void (* dynamicQ_callback_t)(void * data);
-void DynamicQ__forAll(DynamicQ_t dq, dynamicQ_callback_t callback){
+void DynamicQ__foreach(DynamicQ_t dq, dynamicQ_callback_t callback){
     void * data;
     while ((data = DynamicQ__first(dq)) && data != NULL){
         callback(data);
         DynamicQ__deQueue(dq) ;
     }
 }
+
 
 typedef struct
 {

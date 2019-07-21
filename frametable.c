@@ -42,6 +42,15 @@ void FrameTable__delCap(size_t cap){
     return ;
 }
 
+size_t FrameTable__copyCap(size_t src, size_t dest){
+    return;
+}
+
+void FrameTable__unMapCap(size_t cap){
+    // do nothing 
+    return ;
+}
+
 
 void * FrameTable__getFrameVaddr(size_t frame_id){
     return DynamicArrOne__get(Frame_s.frameArr, frame_id);

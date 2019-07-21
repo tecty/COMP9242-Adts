@@ -28,6 +28,7 @@ uint32_t DoubleLinkList__getRoot(DoubleLinkList_t dll, uint32_t index);
 void DoubleLinkList__foreach(
     DoubleLinkList_t dll, uint32_t start, doubleLinkList_callback_t cb
 );
+uint32_t DoubleLinkList__delink(DoubleLinkList_t dll, uint32_t index);
 
 
 #endif // DOUBLE_LINK_LIST_H
