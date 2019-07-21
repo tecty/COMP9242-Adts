@@ -1,3 +1,4 @@
+#include "dynamic.h"
 #include "dynamicArrOne.h"
 
 // not required 

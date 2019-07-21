@@ -1,8 +1,10 @@
 
 #if !defined(DYNAMIC_ARR_ONE_H)
 #define DYNAMIC_ARR_ONE_H
-#include "dynamic.h"
 
+// inheritance
+#include <stdlib.h>
+typedef struct DynamicArr_s * DynamicArr_t;
 typedef DynamicArr_t DynamicArrOne_t ;
 
 DynamicArrOne_t DynamicArrOne__init(size_t item_size);
