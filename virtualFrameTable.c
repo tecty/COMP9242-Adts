@@ -167,10 +167,8 @@ void dumpPage(size_t vfref){
         page.frame_id,
         page.cap 
     );
-    if (page.frame_id < DISK_START)
-    {
+    if (page.frame_id < DISK_START && page.frame_id != 0)
         dumpFrame(__getFrameById(page.frame_id));
-    }
     
 }
 
@@ -231,28 +229,65 @@ void __incLastConsider(){
 size_t VirtualFrameTable__requestFrame(WakeContext_t context){
     size_t allocedRef = INTERFACE->allocFrame();
     if (allocedRef != 0) {
+        context->pageCount --;
         struct Frame_s frame;
         frame.considered =0;
         frame.dirty = 0;
-        frame.pin = 0;
+        frame.pin = 1;
         frame.virtual_id = 0;
         frame.disk_id = 0;
         frame.frame_ref = allocedRef;
         return DynamicArrOne__add(This.frameTable, &frame);
     }
+
+
+    Frame_t curr ; 
+    while (1)
+    {
+        __incLastConsider();
+        curr = DynamicArrOne__get(This.frameTable, This.lastConsider + 1);
+        if (curr ->pin) continue;
+        if (curr->considered == 0)
+        {
+            curr->considered = 1;
+            continue;
+        }
+        break;
+    }
     
+    /**
+     * Swap out 
+     */
+    if (curr->dirty) {
+        
+
+    }
+    curr->dirty =0;
+    curr->pin = 1;
+    return This.lastConsider + 1;
 }
 
 void VirtualFrameTable__pinPage(size_t vfref){
+    VirtualPage_t page = __getPageByVfref(vfref);
+    if (page.frame_id > 0 && page.frame_id < DISK_START)
+    {
+        __getFrameById(page.frame_id)->pin = 1;
+        return ;
+    }
+    
     struct WakeContext_s context;
     context.thread = 0;
     context.pageCount = 1;
-    VirtualFrameTable__requestFrame(&context);
+    size_t requestedFrame= VirtualFrameTable__requestFrame(&context);
     
+    __pointPageToNewFrame(vfref, requestedFrame);
+    dumpPage(vfref);
 }
 
 void VirtualFrameTable__unpinPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
+    if (page.frame_id == 0) return;
+    
     Frame_t frame = __getFrameById(page.frame_id);
     frame->pin = 0;
 }
@@ -290,8 +325,23 @@ int main(int argc, char const *argv[])
         ids[i] = VirtualFrameTable__allocPage();
         assert(ids[i] == i + 1);
         VirtualFrameTable__pinPage(ids[i]);
-        // VirtualFrameTable__unpinPage(ids[i]);
+        VirtualFrameTable__unpinPage(ids[i]);
     }
+
+    // for (size_t i = 0; i < 16; i++)
+    // {
+    //     struct WakeContext_s context ;
+    //     context.thread = 0;
+    //     context.pageCount = 1;
+    //     VirtualFrameTable__requestFrame(&context);
+    // }
+    // for (size_t i = 0; i < 16; i++)
+    // {
+    //     assert(__getPageByVfref(ids[i]).frame_id >= DISK_START);
+    // }
+
+
+
     // printf("\nWrite Thing to page table\n");
     // for (size_t i = 0; i < 32; i++)
     // {
