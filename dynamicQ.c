@@ -102,21 +102,32 @@ void DynamicQ__foreach(DynamicQ_t dq, dynamicQ_callback_t callback){
     }
 }
 
-
-typedef struct
-{
-    uint64_t end_stamp;
-    uint64_t callback;
-    void * data; 
-    // if someone want to disable some clock
-    // this is the word 
-    bool enabled;
-} Timer_t;
-
-uint64_t sum;
-void sumUp(void* data){
-    sum += *(uint64_t *) data;
+DynamicQ_t DynamicQ__dup(DynamicQ_t dq){
+    DynamicQ_t ret = DynamicQ__init(dq->item_size);
+    ret->alloced = dq->alloced;
+    ret->head = dq->head;
+    ret->tail = dq->tail;
+    ret->length = dq->length;
+    free(ret->item_arr);
+    ret->item_arr = malloc(ret->item_size * ret->length);
+    memcpy(ret->item_arr, dq->item_arr, ret->item_size * ret->length);
+    return ret;
 }
+
+// typedef struct
+// {
+//     uint64_t end_stamp;
+//     uint64_t callback;
+//     void * data; 
+//     // if someone want to disable some clock
+//     // this is the word 
+//     bool enabled;
+// } Timer_t;
+
+// uint64_t sum;
+// void sumUp(void* data){
+//     sum += *(uint64_t *) data;
+// }
 
 // int main(int argc, char const *argv[])
 // {

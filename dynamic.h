@@ -12,5 +12,5 @@ size_t DynamicArr__add(DynamicArr_t da,void * data);
 void * DynamicArr__get(DynamicArr_t da, size_t index);
 void DynamicArr__del(DynamicArr_t da, size_t index);
 void DynamicArr__free(DynamicArr_t da);
-
+size_t DynamicArr__getAlloced(DynamicArr_t da);
 #endif // DYNAMIC_H

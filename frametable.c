@@ -39,16 +39,16 @@ size_t FrameTable__allocCspace(){
 }
 void FrameTable__delCap(size_t cap){
     // do nothing 
-    return ;
+     ;
 }
 
 size_t FrameTable__copyCap(size_t src, size_t dest){
-    return;
+    ;
 }
 
 void FrameTable__unMapCap(size_t cap){
     // do nothing 
-    return ;
+     ;
 }
 
 

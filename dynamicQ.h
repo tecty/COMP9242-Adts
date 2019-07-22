@@ -18,5 +18,6 @@ void DynamicQ__deQueue(DynamicQ_t dq);
 size_t DynamicQ__getAlloced(DynamicQ_t dq);
 void DynamicQ__free(DynamicQ_t dq);
 void DynamicQ__foreach(DynamicQ_t dq, dynamicQ_callback_t callback);
+DynamicQ_t DynamicQ__dup(DynamicQ_t dq);
 
 #endif // DYNAMIC_Q

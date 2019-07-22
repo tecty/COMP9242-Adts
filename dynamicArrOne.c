@@ -33,7 +33,7 @@ void DynamicArrOne__free(DynamicArrOne_t da){
     return DynamicArrOne__free(da);
 }
 
-size_t DynamicArr__getAlloced(DynamicArrOne_t da){
+size_t DynamicArrOne__getAlloced(DynamicArrOne_t da){
     return DynamicArr__getAlloced(da);
 }
 
