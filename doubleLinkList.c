@@ -5,7 +5,7 @@
 
 #include "doubleLinkList.h"
 // not required 
-// #include <stdio.h>
+#include <stdio.h>
 
 typedef DynamicArrOne_t DoubleLinkList_t;
 typedef uint64_t (* doubleLinkList_callback_t)(uint64_t data);
@@ -143,6 +143,7 @@ uint64_t DoubleLinkList__update(
 ){
     Node_t curr = DynamicArrOne__get(dll, index);
     if (curr == NULL) return 0;
+    // printf("try to update \n");
     return curr->data = data;
 }
 
@@ -184,6 +185,7 @@ void DoubleLinkList__foreach(
     Node_t curr =  DynamicArrOne__get(dll, start);
     while (curr != NULL) {
         // dump_node(curr);
+        // printf("before %lu, after %lu\n", curr->data, cb(curr->data));
         curr->data = cb(curr->data);
         curr = DynamicArrOne__get(dll, curr->next);
     }
