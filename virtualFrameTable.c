@@ -133,6 +133,8 @@ uint64_t __markCoWCB(uint64_t data){
     return __PageToInt(page);
 }
 
+// TODO: Unmap ?
+// TODO: Copy Cap
 static inline void __pointPageToNewFrame(size_t vfref, size_t frame_id){
     __newFrame = frame_id;
     DoubleLinkList__foreach(
@@ -366,10 +368,11 @@ void VirtualFrame__markPageDirty(size_t vfref){
 
         if (candidateRoot) {
             // there still some page point to it 
-            if ( ! frame->disk_id && frame->dirty ){
-                // swapout to have a new idsk 
-                frame->disk_id = Occupy__alloc(This.diskTable);
-                // TODO:
+            if (frame->dirty) {
+                if ( ! frame->disk_id) {
+                    // swapout to have a new idsk 
+                    frame->disk_id = Occupy__alloc(This.diskTable);
+                } 
                 struct WakeContext_s context;
                 context.thread = 0;
                 context.pageCount = 1;
@@ -377,7 +380,8 @@ void VirtualFrame__markPageDirty(size_t vfref){
                     src.frame_id, frame->disk_id, __swapCallback, &context
                 );
                 __yieldByContext(&context);
-            } 
+            }
+            
 
             // point to a disk page 
             __pointPageToNewFrame(
@@ -427,6 +431,26 @@ size_t VirtualFrame__dupPageShare(size_t vfref){
         __markCoWCB
     );
     return ret;
+}
+
+mapContext_t VirtualFrame__getMapContext(size_t vfref){
+    mapContext_t context;
+    VirtualPage_t page = __getPageByVfref(vfref);
+    if (page.frame_id > DISK_START || page.frame_id == 0) {
+        /**
+         * This will take a long time and yield
+         */
+        VirtualFrame__pinPage(vfref);
+        // update the new page info 
+        page = __getPageByVfref(vfref);
+    }
+    
+    Frame_t frame =  __getFrameById(page.frame_id);
+    context.frame_ref = frame->frame_ref;
+    context.read = 1;
+    context.write = frame->dirty;
+
+    return context;
 }
 
 

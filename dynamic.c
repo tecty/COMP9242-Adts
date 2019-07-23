@@ -102,6 +102,13 @@ void DynamicArr__free(DynamicArr_t da){
     free(da);
 }
 
+void DynamicArr__foreach(
+    DynamicArr_t da, dynamicArr_callback_t cb, void * privateData
+){
+    for (size_t i = 0; i < da->length; i++) {
+        if (da->item_occupied[i]) cb(DynamicArr__get(da,i), privateData);
+    }
+}
 
 
 // typedef struct

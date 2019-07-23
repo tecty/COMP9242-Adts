@@ -9,7 +9,8 @@
 static struct 
 {
     size_t cap;
-    DynamicArr_t frameArr;
+    DynamicArrOne_t frameArr;
+    DynamicArrOne_t capArr;
     size_t alloced;
     FILE * swap;
 } Frame_s;
@@ -19,6 +20,7 @@ void FrameTable__init(){
     Frame_s.cap = 0;
     Frame_s.alloced = 0;
     Frame_s.frameArr = DynamicArrOne__init(sizeof(void *));
+    Frame_s.capArr = DynamicArrOne__init(sizeof(size_t));
     remove("swapfile");
     Frame_s.swap = fopen("swapfile","w+b");
 }
@@ -35,11 +37,14 @@ size_t FrameTable__allocFrame(){
 }
 
 size_t FrameTable__allocCspace(){
-    return Frame_s.cap ++;
+    size_t ret;
+    DynamicArrOne__alloc(Frame_s.capArr, & ret);
+    return ret;
 }
 void FrameTable__delCap(size_t cap){
     // do nothing 
-     ;
+    assert(DynamicArrOne__get(Frame_s.capArr,cap) != NULL);
+    DynamicArrOne__del(Frame_s.capArr, cap);
 }
 
 size_t FrameTable__copyCap(size_t src, size_t dest){
@@ -47,10 +52,18 @@ size_t FrameTable__copyCap(size_t src, size_t dest){
 }
 
 void FrameTable__unMapCap(size_t cap){
-    // do nothing 
-     ;
+    assert(DynamicArrOne__get(Frame_s.capArr,cap) != NULL);
+    size_t * data = DynamicArrOne__get(Frame_s.capArr,cap);
+    assert(*data == 1);
+    *data = 0;
 }
 
+void FrameTable__MapCap(size_t cap){
+    assert(DynamicArrOne__get(Frame_s.capArr,cap) != NULL);
+    size_t * data = DynamicArrOne__get(Frame_s.capArr,cap);
+    assert(*data == 0);
+    *data = 1;
+}
 
 void * FrameTable__getFrameVaddr(size_t frame_id){
     return DynamicArrOne__get(Frame_s.frameArr, frame_id);
