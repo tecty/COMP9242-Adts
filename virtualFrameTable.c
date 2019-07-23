@@ -6,7 +6,7 @@
 
 typedef void (* virtual_frame_table_callback_t)(int64_t, void *);
 
-typedef struct virtualFrameTable_Interface_s
+typedef struct virtualFrame_Interface_s
 {
     /**
      * All the function need to implement by the driver 
@@ -26,7 +26,7 @@ typedef struct virtualFrameTable_Interface_s
     );
     void (*delCap)(size_t cap);
     void (*unMapCap)(size_t cap);
-} * virtualFrameTable_Interface_t;
+} * virtualFrame_Interface_t;
 
 
 
@@ -44,15 +44,15 @@ struct mapContext_s
  */
 #define DISK_START (1UL << 19)
 #define INTERFACE (This.interface)
-#define This (VirtualFrameTable_s)
+#define This (VirtualFrame_s)
 
 typedef struct VirtualPage_s VirtualPage_t;
 __attribute__((__packed__))  struct VirtualPage_s
 {
-    uint32_t frame_id : 23;
-    char copy_on_write: 1;
+    size_t frame_id : 23;
+    size_t cap :32;
+    char copy_on_write: 2;
     char mapped: 1;
-    uint32_t cap :32;
 };
 
 typedef  struct Frame_s * Frame_t;
@@ -90,9 +90,9 @@ static struct
     DoubleLinkList_t pageTable;
     DynamicArrOne_t frameTable;
     Occupy_t diskTable;
-    virtualFrameTable_Interface_t interface;
+    virtualFrame_Interface_t interface;
     size_t lastConsider;
-} VirtualFrameTable_s;
+} VirtualFrame_s;
 
 
 
@@ -124,6 +124,12 @@ size_t __newFrame;
 uint64_t  __updatePageToNewFrameCB(uint64_t data){
     VirtualPage_t page = __IntToPage(data);
     page.frame_id = __newFrame;
+    return __PageToInt(page);
+}
+
+uint64_t __markCoWCB(uint64_t data){
+    VirtualPage_t page = __IntToPage(data);
+    page.copy_on_write = 1;
     return __PageToInt(page);
 }
 
@@ -191,7 +197,7 @@ void dumpPageTable(){
 /**
  * Body:
  */
-void VirtualFrameTable__init(virtualFrameTable_Interface_t inf){
+void VirtualFrame__init(virtualFrame_Interface_t inf){
     assert( sizeof(struct Frame_s)  == 8);
     assert( sizeof(struct VirtualPage_s)  == 8);
     This.pageTable = DoubleLinkList__init();
@@ -201,13 +207,13 @@ void VirtualFrameTable__init(virtualFrameTable_Interface_t inf){
     This.lastConsider = 0;
 }
 
-void VirtualFrameTable__free(){
+void VirtualFrame__free(){
     DoubleLinkList__free(This.pageTable);
     DynamicArrOne__free(This.frameTable);
     Occupy__free(This.diskTable);
 }
 
-size_t VirtualFrameTable__allocPage(){
+size_t VirtualFrame__allocPage(){
     VirtualPage_t vpt ;
     vpt.cap = INTERFACE->allocCspace();
     vpt.mapped = 0;
@@ -231,7 +237,7 @@ void __incLastConsider(){
  * @post: the request frame is alway pined to prevent to be swapout while 
  * a swapping is alreading taking in plave 
  */
-size_t VirtualFrameTable__requestFrame(WakeContext_t context){
+size_t VirtualFrame__requestFrame(WakeContext_t context){
     size_t allocedRef = INTERFACE->allocFrame();
     if (allocedRef != 0) {
         context->pageCount --;
@@ -294,7 +300,7 @@ size_t VirtualFrameTable__requestFrame(WakeContext_t context){
     return This.lastConsider + 1;
 }
 
-void VirtualFrameTable__pinPage(size_t vfref){
+void VirtualFrame__pinPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
     if (page.frame_id > 0 && page.frame_id < DISK_START)
     {
@@ -306,7 +312,7 @@ void VirtualFrameTable__pinPage(size_t vfref){
     context.thread = 0;
     context.pageCount = 1;
 
-    size_t requestedFrame= VirtualFrameTable__requestFrame(&context);
+    size_t requestedFrame= VirtualFrame__requestFrame(&context);
     __getFrameById(requestedFrame)->virtual_id = vfref;
     __yieldByContext(&context);
 
@@ -331,29 +337,105 @@ void VirtualFrameTable__pinPage(size_t vfref){
     __pointPageToNewFrame(vfref, requestedFrame);
 }
 
-void VirtualFrameTable__unpinPage(size_t vfref){
+void VirtualFrame__unpinPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
-    if (page.frame_id == 0) return;
+    if (page.frame_id == 0) return ;
     
     Frame_t frame = __getFrameById(page.frame_id);
     frame->pin = 0;
 }
 
-void * VirtualFrameTable__getVaddrByPageRef(size_t vfref){
-    VirtualFrameTable__pinPage(vfref);
+void * VirtualFrame__getVaddrByPageRef(size_t vfref){
+    VirtualFrame__pinPage(vfref);
     Frame_t frame = __getFrameById(__getPageByVfref(vfref).frame_id);
-    // mark as dirty, because when you point to this addr in kernel,
-    //  theres' no clue about whether I will change it 
-    frame->dirty = 1;
     return INTERFACE->getFrameVaddr(frame->frame_ref);
 }
+
+// before you write to make it consistant
+// make sure it 
+// last page which have CoW, then no swap out is needed 
+void VirtualFrame__markPageDirty(size_t vfref){
+    size_t srcInt = DoubleLinkList__get(This.pageTable, vfref);
+    if (srcInt == 0) return;
+    VirtualPage_t src = __IntToPage(srcInt);
+    Frame_t frame = __getFrameById(src.frame_id);
+
+    if (src.copy_on_write) {
+        size_t candidateRoot = DoubleLinkList__delink(This.pageTable, vfref);
+        src.copy_on_write = 0;
+
+        if (candidateRoot) {
+            // there still some page point to it 
+            if ( ! frame->disk_id && frame->dirty ){
+                // swapout to have a new idsk 
+                frame->disk_id = Occupy__alloc(This.diskTable);
+                // TODO:
+                struct WakeContext_s context;
+                context.thread = 0;
+                context.pageCount = 1;
+                INTERFACE->swapOutFrame(
+                    src.frame_id, frame->disk_id, __swapCallback, &context
+                );
+                __yieldByContext(&context);
+            } 
+
+            // point to a disk page 
+            __pointPageToNewFrame(
+                candidateRoot, 
+                frame->disk_id ? frame->disk_id + DISK_START: 0 
+            );
+
+            // this frame have a null disk 
+            frame->disk_id = 0;
+            frame->virtual_id = vfref;
+        }
+        // save the page, since we update the cow 
+        DoubleLinkList__update(This.pageTable, vfref, __PageToInt(src));
+    }
+
+    // mark this frame as dirty 
+    frame->dirty = 1;
+    frame->considered = 0;
+}
+
+// dup for just map reading 
+size_t VirtualFrame__dupPageMap(size_t vfref){
+    size_t srcInt = DoubleLinkList__get(This.pageTable, vfref);
+    // page not found 
+    if (srcInt == 0 ) return 0;
+    VirtualPage_t src = __IntToPage(srcInt);
+    size_t destRef = VirtualFrame__allocPage();
+    VirtualPage_t dest = __getPageByVfref(destRef);
+    dest.frame_id = src.frame_id;
+    // link up thoes pages 
+    DoubleLinkList__link(This.pageTable, vfref, destRef);
+    DoubleLinkList__update(This.pageTable, destRef, __PageToInt(dest));
+    return destRef;   
+}
+
+
+// dup for share frame
+size_t VirtualFrame__dupPageShare(size_t vfref){
+    size_t ret = VirtualFrame__dupPageMap(vfref);
+    VirtualPage_t page = __getPageByVfref(ret);
+    page.copy_on_write = 1;
+
+    DoubleLinkList__update(This.pageTable, ret, __PageToInt(page));
+    DoubleLinkList__foreach(
+        This.pageTable,
+        DoubleLinkList__getRoot(This.pageTable, vfref),
+        __markCoWCB
+    );
+    return ret;
+}
+
 
 /**
  * Main
  */
 
 #include "frametable.h"
-static struct virtualFrameTable_Interface_s simpleInterface = {
+static struct virtualFrame_Interface_s simpleInterface = {
     .allocFrame    = FrameTable__allocFrame,
     .allocCspace   = FrameTable__allocCspace,
     .getFrameVaddr = FrameTable__getFrameVaddr,
@@ -366,13 +448,13 @@ static struct virtualFrameTable_Interface_s simpleInterface = {
 int main(int argc, char const *argv[])
 {
     FrameTable__init();
-    VirtualFrameTable__init(& simpleInterface);
+    VirtualFrame__init(& simpleInterface);
     size_t ids[32];
     for (size_t i = 0; i < 32; i++) {
-        ids[i] = VirtualFrameTable__allocPage();
+        ids[i] = VirtualFrame__allocPage();
         assert(ids[i] == i + 1);
-        VirtualFrameTable__pinPage(ids[i]);
-        VirtualFrameTable__unpinPage(ids[i]);
+        VirtualFrame__pinPage(ids[i]);
+        VirtualFrame__unpinPage(ids[i]);
     }
 
     // printf("\nPretend swapping\n");
@@ -381,7 +463,7 @@ int main(int argc, char const *argv[])
     //     struct WakeContext_s context ;
     //     context.thread = 0;
     //     context.pageCount = 1;
-    //     VirtualFrameTable__requestFrame(&context);
+    //     VirtualFrame__requestFrame(&context);
     // }
     // dumpPageTable();
 
@@ -392,29 +474,78 @@ int main(int argc, char const *argv[])
     }
     for (size_t i = 0; i < 32; i++)
     {
-        size_t * dataPtr = VirtualFrameTable__getVaddrByPageRef(ids[i]);    
+        size_t * dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);    
+        VirtualFrame__markPageDirty(ids[i]);
         *dataPtr = i;
-        VirtualFrameTable__unpinPage(ids[i]);
+        VirtualFrame__unpinPage(ids[i]);
     }
     for (size_t i = 0; i < 32; i++)
     {
-        size_t * dataPtr = VirtualFrameTable__getVaddrByPageRef(ids[i]);    
+        size_t * dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);    
         assert(*dataPtr == i);
-        VirtualFrameTable__unpinPage(ids[i]);
+        VirtualFrame__unpinPage(ids[i]);
     }
     for (size_t i = 0; i < 32; i++)
     {
-        size_t * dataPtr = VirtualFrameTable__getVaddrByPageRef(ids[i]);    
+        size_t * dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);    
+        VirtualFrame__markPageDirty(ids[i]);
         *dataPtr *= 4;
-        VirtualFrameTable__unpinPage(ids[i]);
+        VirtualFrame__unpinPage(ids[i]);
     }
 
     for (size_t i = 0; i < 32; i++)
     {
-        size_t * dataPtr = VirtualFrameTable__getVaddrByPageRef(ids[i]);    
+        size_t * dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);    
         assert(*dataPtr == i*4);
-        VirtualFrameTable__unpinPage(ids[i]);
+        VirtualFrame__unpinPage(ids[i]);
     }
+
+    size_t share_ids[32];
+    share_ids[0] = ids[0];
+    for (size_t i = 1; i < 32; i++){
+        share_ids[i] = VirtualFrame__dupPageShare(ids[0]);
+    }
+
+    for (size_t i = 0; i < 32; i++)
+    {
+        // all the page has the data of original frame 
+        uint64_t * data  = VirtualFrame__getVaddrByPageRef(share_ids[i]);
+        assert(* data == 0 );
+        // update will be duplicate 
+        VirtualFrame__markPageDirty(share_ids[i]);
+        *data = i;
+        assert(* data == i);
+        VirtualFrame__unpinPage(share_ids[i]);
+    }
+
+    // dumpPage(share_ids[0]);
+    // dumpPage(share_ids[1]);
+
+    /**
+     * Data read back from the disks will be seperate 
+     */
+    for (size_t i = 0; i < 32; i++)
+    {
+        uint64_t * data  = VirtualFrame__getVaddrByPageRef(share_ids[i]);
+        // now I can read those new value and it's independent 
+        assert(* data == i);
+        // printf("share %u see %lu\n", i, *data);
+        // dumpPage(share_ids[i]);
+        VirtualFrame__unpinPage(share_ids[i]);
+    }
+    
+    for (size_t i = 0; i < 32; i++)
+    {
+        uint64_t * data  = VirtualFrame__getVaddrByPageRef(share_ids[i]);
+        // now I can read those new value and it's independent 
+        assert(* data == i);
+        // printf("share %u see %lu\n", i, *data);
+        // dumpPage(share_ids[i]);
+        VirtualFrame__unpinPage(share_ids[i]);
+    }
+
+
+
 
     return 0;
 }

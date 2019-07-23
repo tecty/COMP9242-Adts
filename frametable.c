@@ -61,7 +61,8 @@ void FrameTable__swapOutFrame(
 ){
     uint64_t * dataPtr = DynamicArrOne__get(Frame_s.frameArr, frame_id);
     assert(dataPtr != NULL);
-    // printf("I wrote %u to block %u\n", *dataPtr, disk_id);
+    // printf("Frame:%u \t-> Block:%u\tData:%u\n",  frame_id , disk_id,*dataPtr);
+
     assert( 
         fseek(Frame_s.swap, 8 * disk_id, SEEK_SET) == 0
     );
@@ -83,7 +84,7 @@ void FrameTable__swapInFrame(
     assert(
         fread(dataPtr, sizeof(uint64_t),1, Frame_s.swap)== 1
     );
-    // printf("I read %u to block %u\n", *dataPtr, disk_id);
+    // printf("Block:%u \t-> Frame:%u\tData:%u\n", disk_id, frame_id ,*dataPtr);
 
     cb(0, data);
 }

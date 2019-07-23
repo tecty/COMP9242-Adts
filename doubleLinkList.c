@@ -97,6 +97,10 @@ uint32_t DoubleLinkList__delink(DoubleLinkList_t dll, uint32_t index){
         ret = curr->prev;
     }
 
+    // delink in the list 
+    curr->next = NULL_SLOT;
+    curr->prev = NULL_SLOT;
+
     return ret;
 }
 
