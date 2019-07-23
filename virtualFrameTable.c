@@ -24,6 +24,7 @@ typedef struct virtualFrame_Interface_s
         size_t frame_id, size_t disk_id ,
         virtual_frame_table_callback_t cb, void * data
     );
+    void (*copyFrameCap)(size_t frameref, size_t dest);
     void (*delCap)(size_t cap);
     void (*unMapCap)(size_t cap);
 } * virtualFrame_Interface_t;
@@ -33,10 +34,8 @@ typedef struct virtualFrame_Interface_s
 typedef struct mapContext_s mapContext_t;
 struct mapContext_s
 {
-    uint32_t frame_ref:19;
-    char write:1;
-    char read :1;
-    
+    size_t pageCap:32;
+    size_t write:2;
 };
 
 /**
@@ -124,6 +123,12 @@ size_t __newFrame;
 uint64_t  __updatePageToNewFrameCB(uint64_t data){
     VirtualPage_t page = __IntToPage(data);
     page.frame_id = __newFrame;
+    if (__newFrame > DISK_START && page.mapped)
+    {
+        // unmap if that's a disk frame 
+        INTERFACE->unMapCap(page.cap);
+        page.mapped = 0;
+    }
     return __PageToInt(page);
 }
 
@@ -133,8 +138,6 @@ uint64_t __markCoWCB(uint64_t data){
     return __PageToInt(page);
 }
 
-// TODO: Unmap ?
-// TODO: Copy Cap
 static inline void __pointPageToNewFrame(size_t vfref, size_t frame_id){
     __newFrame = frame_id;
     DoubleLinkList__foreach(
@@ -172,10 +175,10 @@ void dumpFrameTable(){
         dumpFrame(frame);
     }
 }
-void dumpPage(size_t vfref){
-    VirtualPage_t page = __getPageByVfref(vfref);
-    printf("vfref:%u\tCoW:%u\tMaped:%u\t%s:%u\tCap;%u\n",
-        vfref,
+
+void __dumpPageCB(void * data, void * unused){
+    VirtualPage_t page = __IntToPage(*(uint64_t *)data);
+    printf("CoW:%u\tMaped:%u\t%s:%u\tCap;%u\n",
         page.copy_on_write,
         page.mapped,
         page.frame_id < DISK_START ? "FtId": "DkId" ,
@@ -186,13 +189,14 @@ void dumpPage(size_t vfref){
         dumpFrame(__getFrameById(page.frame_id));
 }
 
+void dumpPage(size_t vfref){
+    VirtualPage_t page = __getPageByVfref(vfref);
+    printf("vfref:%u\t", vfref);
+    __dumpPageCB(&page, NULL);
+}
+
 void dumpPageTable(){
-    for (size_t i = 0; i < DynamicArrOne__getAlloced(This.pageTable); i++)
-    {
-        /* code */
-        dumpPage(i + 1);
-    }
-    
+    DynamicArrOne__foreach(This.pageTable, __dumpPageCB, NULL);
 }
 
 
@@ -444,15 +448,49 @@ mapContext_t VirtualFrame__getMapContext(size_t vfref){
         // update the new page info 
         page = __getPageByVfref(vfref);
     }
-    
     Frame_t frame =  __getFrameById(page.frame_id);
-    context.frame_ref = frame->frame_ref;
-    context.read = 1;
+    if (! page.mapped) {
+        INTERFACE->copyFrameCap(frame->frame_ref, page.cap);
+        page.mapped = 1;
+        // store the new mapped page 
+        DoubleLinkList__update(This.pageTable, vfref, __PageToInt(page));
+    }
     context.write = frame->dirty;
+    context.pageCap = page.cap;        
 
     return context;
 }
 
+void VirtualFrame__delPage(size_t vfref){
+    VirtualPage_t page = __getPageByVfref(vfref);
+    // dumpPage(vfref);
+    INTERFACE->delCap(page.cap);
+    size_t candidateRoot = DoubleLinkList__delink(This.pageTable, vfref);
+    if(candidateRoot ==0){
+        // this is the last page: free the disk and frame 
+        if (page.frame_id > 0 && page.frame_id < DISK_START)
+        {
+            Frame_t frame = __getFrameById(page.frame_id);
+            frame->considered  = 1;
+            frame->dirty = 0;
+            frame->disk_id = 0;
+            frame->pin =0;
+            frame->virtual_id = 0;
+            // free the disk 
+            Occupy__del(This.diskTable, frame->disk_id);
+        } else if (page.frame_id != 0) {
+            // free the disk 
+            Occupy__del(This.diskTable, page.frame_id);
+        }
+    } else {
+        Frame_t frame = __getFrameById(page.frame_id);
+        if( frame ->virtual_id == vfref){
+            // point back the candidate root
+            frame->virtual_id = candidateRoot;
+        }
+    }
+    DoubleLinkList__del(This.pageTable, vfref);
+}
 
 /**
  * Main
@@ -467,6 +505,7 @@ static struct virtualFrame_Interface_s simpleInterface = {
     .swapInFrame   = FrameTable__swapInFrame,
     .delCap        = FrameTable__delCap,
     .unMapCap      = FrameTable__unMapCap,
+    .copyFrameCap  = FrameTable__copyFrameCap
 };
 
 int main(int argc, char const *argv[])
@@ -530,8 +569,7 @@ int main(int argc, char const *argv[])
         share_ids[i] = VirtualFrame__dupPageShare(ids[0]);
     }
 
-    for (size_t i = 0; i < 32; i++)
-    {
+    for (size_t i = 0; i < 32; i++) {
         // all the page has the data of original frame 
         uint64_t * data  = VirtualFrame__getVaddrByPageRef(share_ids[i]);
         assert(* data == 0 );
@@ -557,6 +595,7 @@ int main(int argc, char const *argv[])
         // dumpPage(share_ids[i]);
         VirtualFrame__unpinPage(share_ids[i]);
     }
+    dumpPageTable();
     
     for (size_t i = 0; i < 32; i++)
     {
@@ -567,8 +606,14 @@ int main(int argc, char const *argv[])
         // dumpPage(share_ids[i]);
         VirtualFrame__unpinPage(share_ids[i]);
     }
+    // no matter how, all the structure will be free 
 
-
+    for (size_t i = 0; i < 32; i++)
+    {
+        VirtualFrame__delPage(ids[i]);
+        if (i != 0) VirtualFrame__delPage(share_ids[i]);
+    }
+    
 
 
     return 0;

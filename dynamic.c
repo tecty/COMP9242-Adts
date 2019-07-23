@@ -106,6 +106,7 @@ void DynamicArr__foreach(
     DynamicArr_t da, dynamicArr_callback_t cb, void * privateData
 ){
     for (size_t i = 0; i < da->length; i++) {
+        printf("Slot:%u\tOccupy %u\n", i, da->item_occupied[i]);
         if (da->item_occupied[i]) cb(DynamicArr__get(da,i), privateData);
     }
 }

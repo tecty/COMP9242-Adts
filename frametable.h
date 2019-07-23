@@ -9,7 +9,9 @@ typedef void (* frame_table_callback_t)(int64_t err, void * private_data);
 void FrameTable__init();
 size_t FrameTable__allocFrame();
 size_t FrameTable__allocCspace();
-size_t FrameTable__copyCap(size_t src, size_t dest);
+void FrameTable__copyFrameCap(size_t frameref, size_t dest);
+void FrameTable__mapCap(size_t cap);
+
 void FrameTable__delCap(size_t cap);
 
 void FrameTable__unMapCap(size_t cap);

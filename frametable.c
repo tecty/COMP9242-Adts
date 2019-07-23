@@ -37,9 +37,9 @@ size_t FrameTable__allocFrame(){
 }
 
 size_t FrameTable__allocCspace(){
-    size_t ret;
-    DynamicArrOne__alloc(Frame_s.capArr, & ret);
-    return ret;
+    size_t id;
+     DynamicArrOne__alloc(Frame_s.capArr, &id );
+    return id;
 }
 void FrameTable__delCap(size_t cap){
     // do nothing 
@@ -47,7 +47,7 @@ void FrameTable__delCap(size_t cap){
     DynamicArrOne__del(Frame_s.capArr, cap);
 }
 
-size_t FrameTable__copyCap(size_t src, size_t dest){
+void FrameTable__copyFrameCap(size_t frameref, size_t dest){
     ;
 }
 
@@ -58,7 +58,7 @@ void FrameTable__unMapCap(size_t cap){
     *data = 0;
 }
 
-void FrameTable__MapCap(size_t cap){
+void FrameTable__mapCap(size_t cap){
     assert(DynamicArrOne__get(Frame_s.capArr,cap) != NULL);
     size_t * data = DynamicArrOne__get(Frame_s.capArr,cap);
     assert(*data == 0);

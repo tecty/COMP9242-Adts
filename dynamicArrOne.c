@@ -14,7 +14,7 @@ DynamicArrOne_t DynamicArrOne__init(size_t item_size){
 }
 void * DynamicArrOne__alloc(DynamicArrOne_t da, size_t * id){
     void * ret = DynamicArr__alloc(da, id);
-    *id ++;
+    *id = *id + 1;
     return ret;
 }
 size_t DynamicArrOne__add(DynamicArrOne_t da,void * data){
@@ -37,6 +37,11 @@ size_t DynamicArrOne__getAlloced(DynamicArrOne_t da){
     return DynamicArr__getAlloced(da);
 }
 
+void DynamicArrOne__foreach(
+    DynamicArrOne_t da, dynamicArrOne_callback_t cb, void * privateData
+){
+    DynamicArr__foreach(da, cb, privateData);
+}
 
 // typedef struct
 // {
