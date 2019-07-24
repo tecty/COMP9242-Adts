@@ -1,42 +1,10 @@
+#include "virtualFrame.h"
+
 #include "doubleLinkList.h"
 #include "dynamicQ.h"
 #include "occupy.h"
 
 #include <assert.h>
-
-typedef void (* virtual_frame_table_callback_t)(int64_t, void *);
-
-typedef struct virtualFrame_Interface_s
-{
-    /**
-     * All the function need to implement by the driver 
-     * Then this library is trivial and just calling these functions
-     * A simple implemtation can be see in frametable.h (for testing)
-     */
-    size_t (*allocFrame)();
-    size_t (*allocCspace)();
-    void * (*getFrameVaddr)(size_t frame_id);
-    void (*swapOutFrame)(
-        size_t frame_id, size_t disk_id, 
-        virtual_frame_table_callback_t cb, void * data
-    );
-    void (*swapInFrame)(
-        size_t frame_id, size_t disk_id ,
-        virtual_frame_table_callback_t cb, void * data
-    );
-    void (*copyFrameCap)(size_t frameref, size_t dest);
-    void (*delCap)(size_t cap);
-    void (*unMapCap)(size_t cap);
-} * virtualFrame_Interface_t;
-
-
-
-typedef struct mapContext_s mapContext_t;
-struct mapContext_s
-{
-    size_t pageCap:32;
-    size_t write:2;
-};
 
 /**
  * Private 
@@ -159,7 +127,7 @@ static inline VirtualPage_t __getPageByVfref(size_t vfref){
  * Debug
  */
 
-void dumpFrame (Frame_t frame){
+static inline void dumpFrame (Frame_t frame){
     printf("Con:%lu\tDir:%lu\tPin:%u\tDiskFrame:%u\tFrameRef:%u\tVirP:%u\n",
         frame->considered,
         frame->dirty,
@@ -169,7 +137,7 @@ void dumpFrame (Frame_t frame){
         frame->virtual_id
     );
 }
-void dumpFrameTable(){
+static inline void dumpFrameTable(){
     printf("\n");
     size_t alloced = DynamicArrOne__getAlloced(This.frameTable);
     for (size_t i = 0; i < alloced; i++) {
@@ -178,7 +146,7 @@ void dumpFrameTable(){
     }
 }
 
-uint64_t __dumpPageCB(uint64_t data, void * unused){
+static uint64_t __dumpPageCB(uint64_t data, void * unused){
     VirtualPage_t page = __IntToPage(data);
     printf("CoW:%u\tMaped:%u\t%s:%u\tCap;%u\n",
         page.copy_on_write,
@@ -192,13 +160,13 @@ uint64_t __dumpPageCB(uint64_t data, void * unused){
     return 0;
 }
 
-void dumpPage(size_t vfref){
+static inline void dumpPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
     printf("vfref:%u\t", vfref);
     __dumpPageCB(__PageToInt(page), NULL);
 }
 
-void dumpPageTable(){
+static inline void dumpPageTable(){
     DoubleLinkList__dumpEach(This.pageTable, __dumpPageCB, NULL);
 }
 
