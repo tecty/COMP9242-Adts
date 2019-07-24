@@ -5,7 +5,7 @@
 #include "dynamicArrOne.h"
 #include <stdint.h>
 typedef DynamicArrOne_t DoubleLinkList_t;
-typedef uint64_t (* doubleLinkList_callback_t)(uint64_t data);
+typedef uint64_t (* doubleLinkList_callback_t)(uint64_t data, void * private);
 #define NULL_SLOT ((uint32_t)0)
 
 
@@ -26,7 +26,11 @@ uint32_t DoubleLinkList__getPrev(DoubleLinkList_t dll, uint32_t index);
 uint32_t DoubleLinkList__getNext(DoubleLinkList_t dll, uint32_t index);
 uint32_t DoubleLinkList__getRoot(DoubleLinkList_t dll, uint32_t index);
 void DoubleLinkList__foreach(
-    DoubleLinkList_t dll, uint32_t start, doubleLinkList_callback_t cb
+    DoubleLinkList_t dll, uint32_t start, doubleLinkList_callback_t cb,
+    void* private
+);
+void DoubleLinkList__dumpEach(
+    DoubleLinkList_t dll, doubleLinkList_callback_t cb, void* private
 );
 uint32_t DoubleLinkList__delink(DoubleLinkList_t dll, uint32_t index);
 

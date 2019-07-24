@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 typedef DynamicArrOne_t DoubleLinkList_t;
-typedef uint64_t (* doubleLinkList_callback_t)(uint64_t data);
 
 #define NULL_SLOT ((uint32_t)0)
 
@@ -183,18 +182,39 @@ uint32_t DoubleLinkList__getRoot(
 }
 
 void DoubleLinkList__foreach(
-    DoubleLinkList_t dll, uint32_t start, doubleLinkList_callback_t cb
+    DoubleLinkList_t dll, uint32_t start, doubleLinkList_callback_t cb,
+    void* private
 ){
     uint32_t curr_index = start;
     Node_t curr =  DynamicArrOne__get(dll, start);
     while (curr != NULL) {
         // dump_node(curr);
         // printf("before %lu, after %lu\n", curr->data, cb(curr->data));
-        curr->data = cb(curr->data);
+        curr->data = cb(curr->data, private);
         curr = DynamicArrOne__get(dll, curr->next);
     }
 }
+typedef struct dumpContext_s
+{
+    void * privateData;
+    doubleLinkList_callback_t privateCb;
+}* dumpContext_t;
 
+
+void __dumpCB(void * data, void * contextPtr){
+    Node_t node = data;
+    dumpContext_t context = contextPtr;
+    context->privateCb(node->data, context->privateData);
+}
+
+void DoubleLinkList__dumpEach(
+    DoubleLinkList_t dll, doubleLinkList_callback_t cb, void* private
+){
+    struct dumpContext_s context;
+    context.privateCb = cb;
+    context.privateData = private;
+    DynamicArrOne__foreach(dll, __dumpCB, & context);
+}
 
 // #include <assert.h>
 

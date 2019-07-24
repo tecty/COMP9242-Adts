@@ -119,11 +119,12 @@ static inline Frame_t __getFrameById(size_t frame_id){
 }
 #include <stdio.h>
 
-size_t __newFrame; 
-uint64_t  __updatePageToNewFrameCB(uint64_t data){
+uint64_t  __updatePageToNewFrameCB(uint64_t data, void * private){
     VirtualPage_t page = __IntToPage(data);
-    page.frame_id = __newFrame;
-    if (__newFrame > DISK_START && page.mapped)
+    size_t newFrame = *(size_t *) private; 
+
+    page.frame_id = newFrame;
+    if (newFrame > DISK_START && page.mapped)
     {
         // unmap if that's a disk frame 
         INTERFACE->unMapCap(page.cap);
@@ -132,18 +133,18 @@ uint64_t  __updatePageToNewFrameCB(uint64_t data){
     return __PageToInt(page);
 }
 
-uint64_t __markCoWCB(uint64_t data){
+uint64_t __markCoWCB(uint64_t data, void * unused){
     VirtualPage_t page = __IntToPage(data);
     page.copy_on_write = 1;
     return __PageToInt(page);
 }
 
 static inline void __pointPageToNewFrame(size_t vfref, size_t frame_id){
-    __newFrame = frame_id;
     DoubleLinkList__foreach(
         This.pageTable, 
         DoubleLinkList__getRoot(This.pageTable, vfref),
-        __updatePageToNewFrameCB
+        __updatePageToNewFrameCB,
+        & frame_id
     );
 }
 static inline VirtualPage_t __getPageByVfref(size_t vfref){
@@ -176,8 +177,8 @@ void dumpFrameTable(){
     }
 }
 
-void __dumpPageCB(void * data, void * unused){
-    VirtualPage_t page = __IntToPage(*(uint64_t *)data);
+uint64_t __dumpPageCB(uint64_t data, void * unused){
+    VirtualPage_t page = __IntToPage(data);
     printf("CoW:%u\tMaped:%u\t%s:%u\tCap;%u\n",
         page.copy_on_write,
         page.mapped,
@@ -187,16 +188,17 @@ void __dumpPageCB(void * data, void * unused){
     );
     if (page.frame_id < DISK_START && page.frame_id != 0)
         dumpFrame(__getFrameById(page.frame_id));
+    return 0;
 }
 
 void dumpPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
     printf("vfref:%u\t", vfref);
-    __dumpPageCB(&page, NULL);
+    __dumpPageCB(__PageToInt(page), NULL);
 }
 
 void dumpPageTable(){
-    DynamicArrOne__foreach(This.pageTable, __dumpPageCB, NULL);
+    DoubleLinkList__dumpEach(This.pageTable, __dumpPageCB, NULL);
 }
 
 
@@ -310,7 +312,9 @@ void VirtualFrame__pinPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
     if (page.frame_id > 0 && page.frame_id < DISK_START)
     {
-        __getFrameById(page.frame_id)->pin = 1;
+        Frame_t frame = __getFrameById(page.frame_id);
+        frame->pin = 1;
+        frame->considered = 0;
         return ;
     }
     
@@ -345,7 +349,7 @@ void VirtualFrame__pinPage(size_t vfref){
 
 void VirtualFrame__unpinPage(size_t vfref){
     VirtualPage_t page = __getPageByVfref(vfref);
-    if (page.frame_id == 0) return ;
+    if (page.frame_id == 0 || page.frame_id > DISK_START) return ;
     
     Frame_t frame = __getFrameById(page.frame_id);
     frame->pin = 0;
@@ -432,7 +436,7 @@ size_t VirtualFrame__dupPageShare(size_t vfref){
     DoubleLinkList__foreach(
         This.pageTable,
         DoubleLinkList__getRoot(This.pageTable, vfref),
-        __markCoWCB
+        __markCoWCB, NULL
     );
     return ret;
 }
@@ -491,6 +495,98 @@ void VirtualFrame__delPage(size_t vfref){
     }
     DoubleLinkList__del(This.pageTable, vfref);
 }
+
+typedef struct pinFrameContext_s
+{
+    struct WakeContext_s wakeContext;
+    DynamicQ_t frameQ;
+} * pinFrameContext_t;
+
+/**
+ * Pin and unPin by Array
+ */
+void __requestFrmaeCB(void * data, void * private){
+    size_t vfref = *(size_t *) data;
+    pinFrameContext_t context = private;
+    VirtualPage_t page = __getPageByVfref(vfref);
+    
+    if (page.frame_id > 0 && page.frame_id < DISK_START) {
+        // this is a frame we needed 
+        Frame_t frame = __getFrameById(page.frame_id);
+        frame->pin = 1;
+        frame->considered = 0;
+        context->wakeContext.pageCount --;
+        return ;
+    }
+
+    // request a frame 
+    size_t frameID = VirtualFrame__requestFrame(&context->wakeContext);
+    DynamicQ__enQueue(context->frameQ, &frameID);
+}
+
+void __swapInPageCB(void * data, void* private) {
+    size_t vfref = *(size_t *) data;
+    pinFrameContext_t context = private;
+
+    VirtualPage_t page = __getPageByVfref(vfref);
+    if (page.frame_id > 0 && page.frame_id < DISK_START ) {
+        // not need to do anything ,short path 
+        context->wakeContext.pageCount --;
+        return;
+    }
+
+    size_t frameId = *(size_t *) DynamicQ__first(context->frameQ);
+    DynamicQ__deQueue(context->frameQ);
+    Frame_t frame = __getFrameById(frameId);
+
+    if (page.frame_id > DISK_START)
+    {
+        /* swapin is needed */
+        INTERFACE->swapInFrame(
+            frame->frame_ref, page.frame_id - DISK_START,
+            __swapCallback,&context->wakeContext
+        );
+        frame->disk_id = page.frame_id - DISK_START;
+    } else {
+        frame->disk_id = 0;
+    }
+    
+    // page need to point to this frame 
+    __pointPageToNewFrame(vfref, frameId);
+}
+
+void VirtualFrame__pinPageArr(DynamicArrOne_t  vfrefArr){
+    struct pinFrameContext_s context;
+    context.wakeContext.thread = 0;
+    context.wakeContext.pageCount = DynamicArrOne__getAlloced(vfrefArr);
+    context.frameQ = DynamicQ__init(sizeof(size_t));
+
+    /**
+     * swap out 
+     */
+    DynamicArrOne__foreach(vfrefArr, __requestFrmaeCB, & context);
+    // wait for all page is swapped in;
+    __yieldByContext(&context.wakeContext);
+
+    /**
+     * swap in 
+     */
+    context.wakeContext.pageCount = DynamicArrOne__getAlloced(vfrefArr);
+    DynamicArrOne__foreach(vfrefArr, __swapInPageCB, &context);
+    __yieldByContext(&context.wakeContext);
+
+}
+
+void __unpinCB(void * data, void* unused){
+    size_t vfref = *(size_t *) data;
+    VirtualFrame__unpinPage(vfref);
+}
+
+void VirtualFrame__unpinPageArr(DynamicArr_t vfrefArr){
+    // trivialy calling the foreach 
+    DynamicArrOne__foreach(vfrefArr, __unpinCB, NULL);
+}
+
 
 /**
  * Main
@@ -595,7 +691,6 @@ int main(int argc, char const *argv[])
         // dumpPage(share_ids[i]);
         VirtualFrame__unpinPage(share_ids[i]);
     }
-    dumpPageTable();
     
     for (size_t i = 0; i < 32; i++)
     {
@@ -613,6 +708,8 @@ int main(int argc, char const *argv[])
         VirtualFrame__delPage(ids[i]);
         if (i != 0) VirtualFrame__delPage(share_ids[i]);
     }
+    // here shouldn't dump anything 
+    dumpPageTable();
     
 
 
