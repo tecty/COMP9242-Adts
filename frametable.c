@@ -27,12 +27,13 @@ void FrameTable__init(){
 
 size_t FrameTable__allocFrame(){
     int empty = 0;
-    Frame_s.alloced ++;
-    if (Frame_s.alloced > FRAME_LIMIT)
+    if (Frame_s.alloced >= FRAME_LIMIT)
     {
         // couldn't give more frame
         return 0;
     }
+    Frame_s.alloced ++;
+
     return DynamicArrOne__add(Frame_s.frameArr, &empty);
 }
 
@@ -100,6 +101,12 @@ void FrameTable__swapInFrame(
     // printf("Block:%u \t-> Frame:%u\tData:%u\n", disk_id, frame_id ,*dataPtr);
 
     cb(0, data);
+}
+
+void FrameTable__dump(){
+    printf(
+        "I have allocated cap %u\n",DynamicArrOne__getAlloced(Frame_s.capArr)
+    );
 }
 
 // void nullCallback(int64_t err, void * data){

@@ -30,4 +30,5 @@ void FrameTable__swapInFrame(
     size_t frame_id, size_t disk_id ,frame_table_callback_t cb, void * data
 );
 
+void FrameTable__dump();
 #endif // FRAME_TABLE_H

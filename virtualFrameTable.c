@@ -112,6 +112,7 @@ static inline void __yieldByContext(WakeContext_t context){
     {
         // yield here 
     }
+    assert(context->pageCount == 0);
 }
 
 static inline Frame_t __getFrameById(size_t frame_id){
@@ -288,6 +289,8 @@ size_t VirtualFrame__requestFrame(WakeContext_t context){
             curr->frame_ref, curr->disk_id, __swapCallback, context
         );
         // printf("swap out %u\n", curr->virtual_id);
+    } else {
+        context->pageCount --;
     }
 
     if (curr->disk_id == 0)
@@ -549,7 +552,10 @@ void __swapInPageCB(void * data, void* private) {
         frame->disk_id = page.frame_id - DISK_START;
     } else {
         frame->disk_id = 0;
+        context->wakeContext.pageCount --;
     }
+
+    frame->virtual_id = vfref;
     
     // page need to point to this frame 
     __pointPageToNewFrame(vfref, frameId);
@@ -587,6 +593,9 @@ void VirtualFrame__unpinPageArr(DynamicArr_t vfrefArr){
     DynamicArrOne__foreach(vfrefArr, __unpinCB, NULL);
 }
 
+size_t VirtualFrame__getPinableFrameCount(){
+    return DynamicArrOne__getAlloced(This.frameTable)/2 ;
+}
 
 /**
  * Main
@@ -615,6 +624,8 @@ int main(int argc, char const *argv[])
         VirtualFrame__pinPage(ids[i]);
         VirtualFrame__unpinPage(ids[i]);
     }
+
+    // VirtualFrame__pinPage(ids[16]);
 
     // printf("\nPretend swapping\n");
     // for (size_t i = 0; i < 16; i++)
@@ -676,9 +687,6 @@ int main(int argc, char const *argv[])
         VirtualFrame__unpinPage(share_ids[i]);
     }
 
-    // dumpPage(share_ids[0]);
-    // dumpPage(share_ids[1]);
-
     /**
      * Data read back from the disks will be seperate 
      */
@@ -701,17 +709,50 @@ int main(int argc, char const *argv[])
         // dumpPage(share_ids[i]);
         VirtualFrame__unpinPage(share_ids[i]);
     }
-    // no matter how, all the structure will be free 
+    
+    assert(VirtualFrame__getPinableFrameCount() == 8);
+    DynamicArrOne_t pageArr1 = DynamicArrOne__init(sizeof(size_t));
+    DynamicArrOne_t pageArr2 = DynamicArrOne__init(sizeof(size_t));
+    // printf("\nBefore swapping\n");
+    // dumpPageTable();
 
+    for (size_t i = 0; i < 16; i++)
+    {
+        DynamicArrOne__add(pageArr1, &share_ids[i]);
+        DynamicArrOne__add(pageArr2, &share_ids[i+16]);
+    }
+
+    for (size_t i = 0; i < 32; i++)
+    {
+        /* swaping for two region */
+        VirtualFrame__pinPageArr(pageArr1);
+        VirtualFrame__unpinPageArr(pageArr1);
+        VirtualFrame__pinPageArr(pageArr2);
+        VirtualFrame__unpinPageArr(pageArr2);    
+    }
+
+    // printf("\nAfter swapping\n");
+    // dumpPageTable();
+    // no matter how much time it swap, the data still in the disk
+    for (size_t i = 0; i < 32; i++) {
+        uint64_t * data  = VirtualFrame__getVaddrByPageRef(share_ids[i]);
+        // now I can read those new value and it's independent 
+        assert(* data == i);
+        // printf("share %u see %lu\n", i, *data);
+        // dumpPage(ids[i]);
+        VirtualFrame__unpinPage(share_ids[i]);
+    }
+    
+    // no matter how, all the structure will be free 
     for (size_t i = 0; i < 32; i++)
     {
         VirtualFrame__delPage(ids[i]);
         if (i != 0) VirtualFrame__delPage(share_ids[i]);
     }
+
     // here shouldn't dump anything 
     dumpPageTable();
-    
-
+    FrameTable__dump();
 
     return 0;
 }
