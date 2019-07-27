@@ -109,6 +109,9 @@ void FrameTable__dump(){
     );
 }
 
+size_t FrameTable__getFrameCap(size_t frameref){
+    return 0;
+}
 // void nullCallback(int64_t err, void * data){
 //     assert(err == 0);
 //     assert(data == NULL);

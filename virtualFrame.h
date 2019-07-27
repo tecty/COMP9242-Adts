@@ -5,8 +5,7 @@
 
 #include "dynamicArrOne.h"
 
-typedef void (* virtual_frame_table_callback_t)(int64_t, void *);
-
+typedef void (* virtual_frame_table_callback_t)(int64_t err, void * pData);
 typedef struct virtualFrame_Interface_s
 {
     /**
@@ -15,6 +14,7 @@ typedef struct virtualFrame_Interface_s
      * A simple implemtation can be see in frametable.h (for testing)
      */
     size_t (*allocFrame)();
+    void (*flushFrame)(size_t frame_id);
     size_t (*allocCspace)();
     void * (*getFrameVaddr)(size_t frame_id);
     void (*swapOutFrame)(
@@ -28,6 +28,7 @@ typedef struct virtualFrame_Interface_s
     void (*copyFrameCap)(size_t frameref, size_t dest);
     void (*delCap)(size_t cap);
     void (*unMapCap)(size_t cap);
+    size_t (*getFrameCap)(size_t frameref);
 } * virtualFrame_Interface_t;
 
 typedef struct mapContext_s mapContext_t;
@@ -36,6 +37,11 @@ struct mapContext_s
     size_t pageCap:32;
     size_t write:2;
 };
+
+/**
+ * Debug: 
+ */
+void dumpPage(size_t vfref);
 
 /**
  * Public functions
@@ -55,5 +61,6 @@ void VirtualFrame__delPage(size_t vfref);
 void VirtualFrame__pinPageArr(DynamicArrOne_t  vfrefArr);
 void VirtualFrame__unpinPageArr(DynamicArr_t vfrefArr);
 size_t VirtualFrame__getPinableFrameCount();
-
+void VirtualFrame__flushPage(size_t vfref);
+size_t VirtualFrame__getFrameCapByPage(size_t vfref);
 #endif // VIRTUAL_FRAME_H

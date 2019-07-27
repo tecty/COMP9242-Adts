@@ -31,4 +31,7 @@ void FrameTable__swapInFrame(
 );
 
 void FrameTable__dump();
+void FrameTable__unMapCap(size_t cap);
+size_t FrameTable__getFrameCap(size_t frameref);
+
 #endif // FRAME_TABLE_H
