@@ -52,26 +52,15 @@ uint32_t DoubleLinkList__link(
     Node_t first_node = DynamicArrOne__get(dll, first);
     // the second node is already in the list 
     if (first_node == NULL) return 0;
-    if (first_node->next == second) return second;
-    // recursive to find the end of the list and add it there
-    if (first_node->next != NULL_SLOT) 
-        return DoubleLinkList__link(dll, first_node->next,second);
-
-    Node_t second_node = DynamicArrOne__get(dll,second);
-
+    Node_t second_node = DynamicArrOne__get(dll, second);
     if (second_node == NULL) return 0;
-    /**
-     * At here we do know these facts
-     * @pre: first, second != NULL_SLOT
-     * @pre: first_node, second_node != NULL
-     * @pre: first_node-> next == NULL_SLOT 
-     * @pre: first_node-> next != second
-     * @post: second_node-> pre == fist
-     * @post: first_node -> next == second
-     * @ret success
-     */
-    first_node -> next = second;
-    second_node -> prev = first;
+    size_t third = first_node ->next;
+    Node_t third_node = DynamicArrOne__get(dll, first_node->next);
+
+    first_node  -> next = second;
+    second_node -> next = third;
+    if (third_node) third_node -> prev = second;
+    second_node->prev = first;
     return second;
 }
 
@@ -218,7 +207,7 @@ void DoubleLinkList__dumpEach(
 
 // #include <assert.h>
 
-// uint64_t times2(uint64_t in ){
+// uint64_t times2(uint64_t in, void * unused){
 //     return in * 2;
 // }
 
@@ -226,6 +215,7 @@ void DoubleLinkList__dumpEach(
 // {
 //     DoubleLinkList_t dll = DoubleLinkList__init();   
 //     uint64_t ids[10];
+//     uint64_t newIds[10];
 //     for (size_t i = 0; i < 10; i++)
 //     {
 //         ids[i] = DoubleLinkList__add(dll,i *2 );
@@ -237,6 +227,35 @@ void DoubleLinkList__dumpEach(
 //         }
 //     }
     
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         newIds[i] = DoubleLinkList__add(dll, i);
+//     }
+
+//     /**
+//      * Linking Tests
+//      */    
+//     // for (size_t i = 0; i < 10; i++)
+//     // {
+//     //     size_t nextNext = DoubleLinkList__getNext(dll, ids[i]);
+//     //     assert(DoubleLinkList__link(dll, ids[i], newIds[i]) == newIds[i]);
+//     //     if (newIds[i] != DoubleLinkList__getNext(dll, ids[i]))
+//     //     {
+//     //         printf("I expect next %u ",newIds[i]);
+//     //         printf("But I got %u\n",  DoubleLinkList__getNext(dll, ids[i]));
+//     //     }
+        
+//     //     assert(newIds[i] == DoubleLinkList__getNext(dll, ids[i]));
+//     //     assert(nextNext  == DoubleLinkList__getNext(dll, newIds[i]));
+//     //     assert(ids[i]    == DoubleLinkList__getPrev(dll, newIds[i]));
+//     //     if (nextNext != 0)
+//     //     {
+//     //         assert(newIds[i] == DoubleLinkList__getPrev(dll, nextNext));
+//     //     }
+        
+//     // }
+
+
 //     // deletion test 
 //     for (size_t i = 0; i < 5; i++)
 //     {
@@ -277,7 +296,7 @@ void DoubleLinkList__dumpEach(
 //     }
 
 //     // foreach will travel the list 
-//     DoubleLinkList__foreach(dll, ids[1], times2);
+//     DoubleLinkList__foreach(dll, ids[1], times2, NULL);
 
 //     for (size_t i = 0; i < 5; i++)
 //     {
