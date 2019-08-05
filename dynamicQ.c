@@ -102,6 +102,19 @@ void DynamicQ__foreach(DynamicQ_t dq, dynamicQ_callback_t callback){
     }
 }
 
+DynamicQ_t DynamicQ__filter(
+    DynamicQ_t dq, dynamicQ_compare_t cmp, void * private_data
+){
+    void * data;
+    DynamicQ_t new = DynamicQ__init(dq->item_size);
+    while ((data = DynamicQ__first(dq)) && data != NULL){
+        // enqueue to new
+        if (cmp(data, private_data)) DynamicQ__enQueue(new, data);
+        DynamicQ__deQueue(dq) ;
+    }
+    return new;    
+}
+
 DynamicQ_t DynamicQ__dup(DynamicQ_t dq){
     DynamicQ_t ret = DynamicQ__init(dq->item_size);
     ret->alloced = dq->alloced;
@@ -114,82 +127,90 @@ DynamicQ_t DynamicQ__dup(DynamicQ_t dq){
     return ret;
 }
 
-// typedef struct
-// {
-//     uint64_t end_stamp;
-//     uint64_t callback;
-//     void * data; 
-//     // if someone want to disable some clock
-//     // this is the word 
-//     bool enabled;
-// } Timer_t;
+typedef struct
+{
+    uint64_t end_stamp;
+    uint64_t callback;
+    void * data; 
+    // if someone want to disable some clock
+    // this is the word 
+    bool enabled;
+} Timer_t;
 
-// uint64_t sum;
-// void sumUp(void* data){
-//     sum += *(uint64_t *) data;
-// }
+uint64_t sum;
+void sumUp(void* data){
+    sum += *(uint64_t *) data;
+}
 
-// int main(int argc, char const *argv[])
-// {
-//     DynamicQ_t dqt = DynamicQ__init(sizeof(Timer_t));
-//     Timer_t timer;
+bool largerCB(void * data, void * pdata){
+    return *(uint64_t *) data > (uint64_t) pdata;
+}
 
-//     for (size_t i = 0; i < 10; i++)
-//     {
-//         timer.end_stamp = i;
-//         timer.callback = 2*i;
-//         DynamicQ__enQueue(dqt, &timer);
-//     }
-//     for (size_t i = 0; i < 10; i++)
-//     {
-//         Timer_t * first = DynamicQ__first(dqt);
-//         assert(first->end_stamp == i);
-//         assert(first->callback == 2*i);
-//         DynamicQ__deQueue(dqt);
-//     }
+int main(int argc, char const *argv[])
+{
+    DynamicQ_t dqt = DynamicQ__init(sizeof(Timer_t));
+    Timer_t timer;
+
+    for (size_t i = 0; i < 10; i++)
+    {
+        timer.end_stamp = i;
+        timer.callback = 2*i;
+        DynamicQ__enQueue(dqt, &timer);
+    }
+    for (size_t i = 0; i < 10; i++)
+    {
+        Timer_t * first = DynamicQ__first(dqt);
+        assert(first->end_stamp == i);
+        assert(first->callback == 2*i);
+        DynamicQ__deQueue(dqt);
+    }
            
-//     assert(DynamicQ__isEmpty(dqt) == true);
+    assert(DynamicQ__isEmpty(dqt) == true);
 
-//     for (size_t i = 0; i < 4096; i++)
-//     {
-//         timer.end_stamp = i;
-//         timer.callback = 2*i;
-//         DynamicQ__enQueue(dqt, &timer);
-//         Timer_t * first = DynamicQ__first(dqt);
-//         assert(first->end_stamp == i);
-//         assert(first->callback == 2*i);
-//         DynamicQ__deQueue(dqt);
-//     }
+    for (size_t i = 0; i < 4096; i++)
+    {
+        timer.end_stamp = i;
+        timer.callback = 2*i;
+        DynamicQ__enQueue(dqt, &timer);
+        Timer_t * first = DynamicQ__first(dqt);
+        assert(first->end_stamp == i);
+        assert(first->callback == 2*i);
+        DynamicQ__deQueue(dqt);
+    }
            
-//     assert(DynamicQ__isEmpty(dqt) == true);
+    assert(DynamicQ__isEmpty(dqt) == true);
 
 
-//     for (size_t i = 0; i < 4096; i++)
-//     {
-//         timer.end_stamp = i;
-//         timer.callback = 2*i;
-//         DynamicQ__enQueue(dqt, &timer);
-//     }
-//     for (size_t i = 0; i < 4096; i++)
-//     {
-//         Timer_t * first = DynamicQ__first(dqt);
-//         assert(first->end_stamp == i);
-//         assert(first->callback == 2*i);
-//         DynamicQ__deQueue(dqt);
-//     }
+    for (size_t i = 0; i < 4096; i++)
+    {
+        timer.end_stamp = i;
+        timer.callback = 2*i;
+        DynamicQ__enQueue(dqt, &timer);
+    }
+    for (size_t i = 0; i < 4096; i++)
+    {
+        Timer_t * first = DynamicQ__first(dqt);
+        assert(first->end_stamp == i);
+        assert(first->callback == 2*i);
+        DynamicQ__deQueue(dqt);
+    }
 
-//     DynamicQ__free(dqt);
-//     DynamicQ__init(sizeof(uint64_t));
-//     for (size_t i = 0; i < 10; i++)
-//     {
-//         DynamicQ__enQueue(dqt, &i);
-//     }
+    DynamicQ__free(dqt);
+    DynamicQ__init(sizeof(uint64_t));
+    for (size_t i = 0; i < 10; i++)
+    {
+        DynamicQ__enQueue(dqt, &i);
+    }
  
-//     sum = 0;
-//     DynamicQ__forAll(dqt, sumUp);
-//     assert(sum == 45);
+    // sum = 0;
+    // DynamicQ__foreach(dqt, sumUp);
+    // assert(sum == 45);
 
+    DynamicQ_t filtered = DynamicQ__filter(dqt, largerCB, (void *) 5);
+    sum = 0;
+    DynamicQ__foreach(filtered, sumUp);
+    assert(sum == 30);
            
-//     assert(DynamicQ__isEmpty(dqt) == true);
-//     return 0;
-// }
+    assert(DynamicQ__isEmpty(dqt) == true);
+    return 0;
+}

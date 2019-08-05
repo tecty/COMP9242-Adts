@@ -117,6 +117,12 @@ void DynamicArr__foreach(
     }
 }
 
+size_t DynamicArr__getIndexByPtr(DynamicArr_t da, void * ptr){
+    assert(ptr != NULL);
+    assert(ptr >= da->item_arr);
+
+    return ((size_t) (ptr - da->item_arr))/ da->item_size;
+}
 
 // typedef struct
 // {
@@ -181,14 +187,21 @@ void DynamicArr__foreach(
 //     for (size_t i = 0; i < 100; i++)
 //     {
 //         timer.end_stamp = i;
-//         timer.callback = i*2;
+//         timer.callback  = i*2;
 //         size_t id = DynamicArr__add(dat,&timer);
 //         Timer_t * stored_timer =  DynamicArr__get(dat, id);
 //         assert(stored_timer->end_stamp == i);
 //         assert(stored_timer->callback == i*2);
 //     }
 
-
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         assert(
+//             DynamicArr__getIndexByPtr(dat, DynamicArr__get(dat, ids[i])) 
+//             == ids[i] 
+//         );
+//     }
+    
 
 //     /* code */
 //     return 0;
