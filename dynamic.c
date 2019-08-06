@@ -5,8 +5,7 @@
 
 typedef struct DynamicArr_s
 {
-    void * item_arr;
-    bool * item_occupied;
+    void ** item_arr;
     size_t item_size;
     size_t alloced; 
     size_t length; 
@@ -27,13 +26,8 @@ DynamicArr_t DynamicArr__init(size_t item_size){
     ret->alloced   = 0;
     ret->item_size = item_size;
     // create the dynamic arr 
-    ret-> item_arr      = malloc(ret->length * item_size);
-    ret-> item_occupied = malloc(ret->length* sizeof(bool));
-    for (size_t i = 0; i < ret->length; i++)
-    {
-        ret->item_occupied[i] = false;
-    }
-    
+    ret-> item_arr      = malloc(ret->length * sizeof(void *));
+    memset(ret->item_arr, 0, ret->length * sizeof(void *));
 
     return ret;
 }
@@ -41,28 +35,21 @@ DynamicArr_t DynamicArr__init(size_t item_size){
 void * DynamicArr__alloc(DynamicArr_t da, size_t * id){
     if (da->alloced == da-> length - 2){
         // double the size, pre_alloc to improve searching
-        da->length *= 2;
-        da->item_occupied = realloc(da->item_occupied, da->length * sizeof(bool));
-        da->item_arr      = realloc(da->item_arr     , da->length * da->item_size);
-        for (size_t i = da->length/2; i < da->length; i++)
-        {
-            /* code */
-            da->item_occupied[i] = false;
-        }
+        da->length   *= 2;
+        da->item_arr  = realloc(da->item_arr     , da->length * sizeof(void *));
+        memset(&(da->item_arr[da->length/2]), 0, sizeof(void *) * da->length / 2);
     }
 
-
-    while (da->item_occupied[da->tail] == true)
-    {
-        DynamicArr__incTail(da);
-    }
+    while (da->item_arr[da->tail]) DynamicArr__incTail(da);
 
     *id = da->tail;
-    da->item_occupied[da->tail] = true;
+    void * ret = malloc(da->item_size);
+    memset(ret, 0, da->item_size);
+    da->item_arr[da->tail] = ret;
     da->alloced ++; 
 
     DynamicArr__incTail(da);
-    return DynamicArr__get(da, *id);
+    return ret;
 }
 
 
@@ -79,34 +66,30 @@ size_t DynamicArr__add(DynamicArr_t da,void * data){
 
 void * DynamicArr__get(DynamicArr_t da, size_t index){
     // return null to indecate this item is delted 
-    if (da->item_occupied[index] == false ){
-        return NULL;
-    }
-    return da->item_arr + index * da->item_size;
+    assert(index < da->length);
+    return da->item_arr[index];
 }
 
 void DynamicArr__del(DynamicArr_t da, size_t index){
-    if (da->item_occupied[index] == true){
-        da->item_occupied[index] = false;
+    if (da->item_arr[index])
+    {
+        free(da->item_arr[index]);
+        da->item_arr[index] = NULL;
         da->alloced --;
-    } 
+    } else {
+        printf("==> Deprecated: free a not exist obj %lu\n", index);
+    }
 }
 
 size_t DynamicArr__getAlloced(DynamicArr_t da){
     return da->alloced;
 }
 
-void DynamicArr__free(DynamicArr_t da){
-    free(da->item_arr);
-    free(da->item_occupied);
-    free(da);
-}
-
 void DynamicArr__foreach(
     DynamicArr_t da, dynamicArr_callback_t cb, void * privateData
 ){
     for (size_t i = 0; i < da->length; i++) {
-        if (da->item_occupied[i]) {
+        if (da->item_arr[i]) {
             cb(DynamicArr__get(da,i), privateData);
             // printf(
             //     "Slot:%u\tOccupy %u\tNum:%lu\n",
@@ -117,11 +100,30 @@ void DynamicArr__foreach(
     }
 }
 
+void __freeCB(void * data, void * unused){
+    free(data);
+}
+
+void DynamicArr__free(DynamicArr_t da){
+    DynamicArr__foreach(da, __freeCB, NULL);
+    free(da->item_arr);
+    free(da);
+}
+
+
 size_t DynamicArr__getIndexByPtr(DynamicArr_t da, void * ptr){
     assert(ptr != NULL);
-    assert(ptr >= da->item_arr);
 
-    return ((size_t) (ptr - da->item_arr))/ da->item_size;
+    for (size_t i = 0; i < da->length; i++)
+    {
+        if (da->item_arr[i] == ptr)
+        {
+            return i;
+        }
+    }
+
+    printf("==> Error: Unable to find the obj %p\n", ptr);
+    assert(0);    
 }
 
 // typedef struct
