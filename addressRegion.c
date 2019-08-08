@@ -185,13 +185,15 @@ bool AddressRegion__resizeByAddr(
 void *AddressRegion__declareForMmap(AddressRegion_t ar, size_t size)
 {
     ContinueRegion_Region_t crrt =
-        ContinueRegion__requestRegion(ar->mapRegions, (__size4kAlign(size) >> 12));
+        ContinueRegion__requestRegion(
+            ar->mapRegions, __size4kAlign(size) >> 12);
 
     AddressRegion_Region_t region;
     size_t id;
     region = DynamicArr__alloc(ar->regions, &id);
     // DynamicArr__add(ar->regions, &region);
-    region->start = ContinueRegionRegion__getStart(crrt) + PROCESS_MMAP_START;
+    region->start = 
+        (ContinueRegionRegion__getStart(crrt) << 12)  + PROCESS_MMAP_START;
     region->size = ContinueRegionRegion__getSize(crrt) << 12;
     region->crrt = crrt;
     region->type = MMAP;
@@ -203,7 +205,7 @@ void *AddressRegion__declareForMmap(AddressRegion_t ar, size_t size)
  */
 void *AddressRegion__unmap(AddressRegion_t ar, void *start, size_t size)
 {
-    printf("==> I have got size %u\n", size);
+    // printf("==> I have got size %u\n", size);
     struct findRegionContext_s context;
     context.vaddr = start;
     context.found = NULL;
@@ -215,12 +217,11 @@ void *AddressRegion__unmap(AddressRegion_t ar, void *start, size_t size)
         context.found->type != MMAP ||
         context.found->size != size)
     {
-        printf("cnm %lu, %lu\n", size, context.found->size);
         if (context.found)
             __dumpRegionRegion(context.found);
         return NULL;
     }
-    printf("==> I have got here for releasing\n");
+    // printf("==> I have got here for releasing\n");
 
     ContinueRegion__release(ar->mapRegions, context.found->crrt);
     void *ret = (void *)context.found->start;
@@ -291,7 +292,6 @@ int main(int argc, char const *argv[])
 
     for (size_t i = 0; i < 10; i++)
     {
-        printf("==> %u\n", i);
         assert(
             start[i] ==
             AddressRegion__unmap(art, start[i] + (i << 5), (i + 28) << 12));

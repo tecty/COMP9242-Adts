@@ -55,7 +55,8 @@ void __resize(ContinueRegion_t cr, uint64_t new_size)
             // zero out the new space
             cr->occupied[i] = false;
         }
-        printf("I have resize from %lu to %lu allocated %lu\n", cr->size, new_size, cr->allocated);
+        // printf("I have resize from %lu to %lu allocated %lu\n",
+        //      cr->size, new_size, cr->allocated);
         cr->size = new_size;
     }
 }
@@ -103,7 +104,7 @@ void ContinueRegion__release(
         cr->occupied[i + crrt->start] = false;
     }
     cr->allocated -= crrt->size;
-    printf("I have release %lu\n", cr->allocated);
+    // printf("I have release %lu\n", cr->allocated);
 
     // free the struct
     free(crrt);
