@@ -77,6 +77,8 @@ typedef struct findRegionContext_s
 static void __inRegionCB(void *data, void *pdata)
 {
     findRegionContext_t context = pdata;
+    AddressRegion_Region_t arrt = data;
+
     if (__strictInRegion(data, context->vaddr))
     {
         context->found = data;
@@ -162,7 +164,7 @@ bool AddressRegion__resizeByAddr(
     {
         new_size = ((uint64_t)index) - arrs->start;
         // to much for a single malloc
-        if (new_size > (1 << 17))
+        if (new_size - arrs->size > (1 << 17))
             return false;
         arrs->size = __size4kAlign(new_size);
         return true;
@@ -201,7 +203,7 @@ void *AddressRegion__declareForMmap(AddressRegion_t ar, size_t size)
  */
 void *AddressRegion__unmap(AddressRegion_t ar, void *start, size_t size)
 {
-    printf("==> I have got size %u\n",size);
+    printf("==> I have got size %u\n", size);
     struct findRegionContext_s context;
     context.vaddr = start;
     context.found = NULL;
@@ -214,7 +216,8 @@ void *AddressRegion__unmap(AddressRegion_t ar, void *start, size_t size)
         context.found->size != size)
     {
         printf("cnm %lu, %lu\n", size, context.found->size);
-        if (context.found) __dumpRegionRegion(context.found);
+        if (context.found)
+            __dumpRegionRegion(context.found);
         return NULL;
     }
     printf("==> I have got here for releasing\n");
@@ -246,7 +249,7 @@ int main(int argc, char const *argv[])
     {
         /* code */
         assert(
-            AddressRegion__isInRegion(art, (void *)0x500000 - i) == STACK);
+            AddressRegion__isInRegion(art, (void *)0x500000 - i - 8) == STACK);
         assert(
             AddressRegion__isInRegion(art, (void *)0x100000 + i) == HEAP);
     }
@@ -275,7 +278,7 @@ int main(int argc, char const *argv[])
 
     // now I have right to use these region
     assert(AddressRegion__isInRegion(art, (void *)0x4fd000) == STACK);
-    assert(AddressRegion__isInRegion(art, (void *)0x102000) == HEAP);
+    assert(AddressRegion__isInRegion(art, (void *)0x102000 - 8) == HEAP);
 
     void *start[10];
 
@@ -289,7 +292,9 @@ int main(int argc, char const *argv[])
     for (size_t i = 0; i < 10; i++)
     {
         printf("==> %u\n", i);
-        assert(start[i] == AddressRegion__unmap(art, start[i] + (i << 5), (i + 28) << 12));
+        assert(
+            start[i] ==
+            AddressRegion__unmap(art, start[i] + (i << 5), (i + 28) << 12));
     }
 
     assert(AddressRegion__unmap(art, start[5], (5 + 28) << 12) == NULL);
