@@ -112,6 +112,7 @@ DynamicQ_t DynamicQ__filter(
         if (cmp(data, private_data)) DynamicQ__enQueue(new, data);
         DynamicQ__deQueue(dq) ;
     }
+    DynamicQ__free(dq);
     return new;    
 }
 

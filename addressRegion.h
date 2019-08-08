@@ -8,10 +8,10 @@
 
 #define ALLOW_STACK_MALLOC (0x2000)
 enum addressRegionTypes_e {
-    HEAP = 1, STACK, CODE, SHARE
+    HEAP = 1, IPC, STACK, CODE, SHARE, MMAP
 } ;
 
-typedef DynamicArr_t AddressRegion_t;
+typedef struct AddressRegion_s * AddressRegion_t;
 
 AddressRegion_t AddressRegion__init();
 

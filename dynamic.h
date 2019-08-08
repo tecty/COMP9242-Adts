@@ -17,4 +17,7 @@ size_t DynamicArr__getAlloced(DynamicArr_t da);
 void DynamicArr__foreach(
     DynamicArr_t da, dynamicArr_callback_t cb, void * privateData
 );
+
+size_t DynamicArr__getIndexByPtr(DynamicArr_t da, void * ptr);
+
 #endif // DYNAMIC_H
