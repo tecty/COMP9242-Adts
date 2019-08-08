@@ -719,10 +719,278 @@ int main(int argc, char const *argv[])
     //     share_ids[i] = VirtualFrame__dupPageShare(ids[0]);
     // }
 
-    // for (size_t i = 0; i < 32; i++) {
-    //     // all the page has the data of original frame 
-    //     uint64_t * data  = VirtualFrame__getVaddrByPageRef(share_ids[i]);
-    //     assert(* data == 0 );
+    // for (size_t i = 0; i < 32; i++) int main(int argc, char const *argv[])
+// {
+//     DynamicQ_t dqt = DynamicQ__init(sizeof(Timer_t));
+//     Timer_t timer;
+
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+
+//     DynamicQ__free(dqt);
+//     DynamicQ__init(sizeof(uint64_t));
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         DynamicQ__enQueue(dqt, &i);
+//     }
+ 
+//     // sum = 0;
+//     // DynamicQ__foreach(dqt, sumUp);
+//     // assert(sum == 45);
+
+//     DynamicQ_t filtered = DynamicQ__filter(dqt, largerCB, (void *) 5);
+//     sum = 0;
+//     DynamicQ__foreach(filtered, sumUp);
+//     assert(sum == 30);
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+//     return 0;
+// }{
+    //     // all the page has the dataint main(int argc, char const *argv[])
+// {
+//     DynamicQ_t dqt = DynamicQ__init(sizeof(Timer_t));
+//     Timer_t timer;
+
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+
+//     DynamicQ__free(dqt);
+//     DynamicQ__init(sizeof(uint64_t));
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         DynamicQ__enQueue(dqt, &i);
+//     }
+ 
+//     // sum = 0;
+//     // DynamicQ__foreach(dqt, sumUp);
+//     // assert(sum == 45);
+
+//     DynamicQ_t filtered = DynamicQ__filter(dqt, largerCB, (void *) 5);
+//     sum = 0;
+//     DynamicQ__foreach(filtered, sumUp);
+//     assert(sum == 30);
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+//     return 0;
+// } of original frame 
+    //     uint64_t * data  = VirtualFrint main(int argc, char const *argv[])
+// {
+//     DynamicQ_t dqt = DynamicQ__init(sizeof(Timer_t));
+//     Timer_t timer;
+
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+
+//     DynamicQ__free(dqt);
+//     DynamicQ__init(sizeof(uint64_t));
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         DynamicQ__enQueue(dqt, &i);
+//     }
+ 
+//     // sum = 0;
+//     // DynamicQ__foreach(dqt, sumUp);
+//     // assert(sum == 45);
+
+//     DynamicQ_t filtered = DynamicQ__filter(dqt, largerCB, (void *) 5);
+//     sum = 0;
+//     DynamicQ__foreach(filtered, sumUp);
+//     assert(sum == 30);
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+//     return 0;
+// }ame__getVaddrByPageRef(share_ids[i]);
+    //     assert(* data == 0 );int main(int argc, char const *argv[])
+// {
+//     DynamicQ_t dqt = DynamicQ__init(sizeof(Timer_t));
+//     Timer_t timer;
+
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+
+
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         timer.end_stamp = i;
+//         timer.callback = 2*i;
+//         DynamicQ__enQueue(dqt, &timer);
+//     }
+//     for (size_t i = 0; i < 4096; i++)
+//     {
+//         Timer_t * first = DynamicQ__first(dqt);
+//         assert(first->end_stamp == i);
+//         assert(first->callback == 2*i);
+//         DynamicQ__deQueue(dqt);
+//     }
+
+//     DynamicQ__free(dqt);
+//     DynamicQ__init(sizeof(uint64_t));
+//     for (size_t i = 0; i < 10; i++)
+//     {
+//         DynamicQ__enQueue(dqt, &i);
+//     }
+ 
+//     // sum = 0;
+//     // DynamicQ__foreach(dqt, sumUp);
+//     // assert(sum == 45);
+
+//     DynamicQ_t filtered = DynamicQ__filter(dqt, largerCB, (void *) 5);
+//     sum = 0;
+//     DynamicQ__foreach(filtered, sumUp);
+//     assert(sum == 30);
+           
+//     assert(DynamicQ__isEmpty(dqt) == true);
+//     return 0;
+// }
     //     // update will be duplicate 
     //     VirtualFrame__markPageDirty(share_ids[i]);
     //     *data = i;

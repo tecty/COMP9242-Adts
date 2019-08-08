@@ -3,13 +3,16 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "dynamic.h"
+
 
 #define ALLOW_STACK_MALLOC (0x2000)
 enum addressRegionTypes_e {
     HEAP = 1, STACK, CODE, SHARE
 } ;
 
-typedef struct AddressRegion_s * AddressRegion_t;
+typedef DynamicArr_t AddressRegion_t;
+
 AddressRegion_t AddressRegion__init();
 
 void AddressRegion__declare(
