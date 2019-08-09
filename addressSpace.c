@@ -60,12 +60,12 @@ void AddressSpace__mapVaddr(addressSpace_t ast, void* paddr, void* vaddr)
 {
     uint64_t this_index;
     uint64_t* this_pageTable = ast->rootPageTable;
-    printf("Insert: got vaddr %lu\n", (uint64_t)vaddr);
+    // printf("Insert: got vaddr %lu\n", (uint64_t)vaddr);
 
     for (size_t i = 0; i <= 3; i++) {
         // calculate the mask
         this_index = AddressSpace__getIndexByVaddr(vaddr, i);
-        printf("Insert: got Index %lu\n", this_index);
+        // printf("Insert: got Index %lu\n", this_index);
 
         assert(this_index < PAGE_SLOT);
         if (i == 3) {
@@ -86,7 +86,7 @@ void* AddressSpace__getPaddrByVaddr(addressSpace_t ast, void* vaddr)
 {
     uint64_t this_index;
     uint64_t* this_pageTable = ast->rootPageTable;
-    printf("Select: got vaddr %lu\n", (uint64_t)vaddr);
+    // printf("Select: got vaddr %lu\n", (uint64_t)vaddr);
 
     for (size_t i = 0; i <= 3; i++) {
         this_index = AddressSpace__getIndexByVaddr(vaddr, i);
@@ -96,6 +96,7 @@ void* AddressSpace__getPaddrByVaddr(addressSpace_t ast, void* vaddr)
         if (i == 3) {
             // instead of mapping a page table, map a paddr
             // TODO: type change
+            // printf("==>I want to return %lu\n", this_pageTable[this_index]);
             return (void*)this_pageTable[this_index];
         }
         if (this_pageTable[this_index] == 0) {
@@ -169,7 +170,7 @@ static bool __inList(size_t pageId, DynamicArr_t pageArr)
     return inlistContext.found;
 }
 
-static void __filterPageLambda(void* data, void* pdata)
+static bool __filterPageLambda(void* data, void* pdata)
 {
     size_t pageId = *(size_t*)data;
     filterPageContext_t context = pdata;
@@ -185,10 +186,11 @@ bool AddressSpace__unmap(addressSpace_t ast, void* start, size_t size)
 {
     // re get the start, so the start will be get to the real start
     start = AddressRegion__unmap(ast->regions, start, size);
-    DynamicArr_t pageIdArr = DynamicQ__init(sizeof(size_t));
+    DynamicArr_t pageIdArr = DynamicArr__init(sizeof(size_t));
     for (size_t indent = 0; indent < size; indent += 0x1000) {
 
-        size_t pageId = AddressSpace__getPaddrByVaddr(ast, start + indent);
+        size_t pageId
+            = (size_t)AddressSpace__getPaddrByVaddr(ast, start + indent);
         if (pageId != 0) {
             DynamicArr__add(pageIdArr, &pageId);
             // record that address is free
@@ -202,29 +204,72 @@ bool AddressSpace__unmap(addressSpace_t ast, void* start, size_t size)
         = DynamicQ__filter(ast->pageList, __filterPageLambda, &context);
 }
 
+#include "frametable.h"
+static struct virtualFrame_Interface_s simpleInterface
+    = { .allocFrame = FrameTable__allocFrame,
+          .allocCspace = FrameTable__allocCspace,
+          .getFrameVaddr = FrameTable__getFrameVaddr,
+          .swapOutFrame = FrameTable__swapOutFrame,
+          .swapInFrame = FrameTable__swapInFrame,
+          .delCap = FrameTable__delCap,
+          .unMapCap = FrameTable__unMapCap,
+          .copyFrameCap = FrameTable__copyFrameCap,
+          .getFrameCap = FrameTable__getFrameCap };
+
+#define PROCESS_MMAP_START (0xB000000000)
+
 int main(int argc, char const* argv[])
 {
+    FrameTable__init();
+    VirtualFrame__init(&simpleInterface);
+
     srand(time(NULL));
     uint64_t vaddrs[10];
     uint64_t paddrs[10];
 
     addressSpace_t ast = AddressSpace__init();
 
-    for (size_t i = 0; i < 10; i++) {
-        vaddrs[i] = rand();
-        paddrs[i] = rand();
-        AddressSpace__mapVaddr(ast, (void*)paddrs[i], (void*)vaddrs[i]);
-        printf("V: %lu \tP: %lu \n", vaddrs[i], paddrs[i]);
+    // for (size_t i = 0; i < 10; i++) {
+    //     vaddrs[i] = rand();
+    //     paddrs[i] = rand();
+    //     AddressSpace__mapVaddr(ast, (void*)paddrs[i], (void*)vaddrs[i]);
+    //     printf("V: %lu \tP: %lu \n", vaddrs[i], paddrs[i]);
+    // }
+
+    // for (size_t i = 0; i < 10; i++) {
+    //     printf("V: %lu \tP: %lu \tGot: %lu\n", vaddrs[i], paddrs[i],
+    //         (uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i]));
+
+    //     assert((uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i])
+    //         == paddrs[i]);
+    // }
+    // AddressSpace__mapVaddr(ast, (void*)12345, (void*)0x8ffff000);
+
+    void* start[10];
+    for (size_t i = 1; i < 10; i++) {
+        start[i] = AddressSpace__mmap(ast, i << 12);
+        assert(start[i] >= (void*)PROCESS_MMAP_START);
+        // printf("==> I have alloced start %p\n", start[i]);
+        for (size_t j = 0; j < i; j++) {
+            assert(AddressSpace__getPaddrByVaddr(ast, start[i] + (j << 12))
+                == NULL);
+
+            AddressSpace__mapVaddr(
+                ast, (void*)VirtualFrame__allocPage(), start[i] + (j << 12));
+        }
     }
 
     for (size_t i = 0; i < 10; i++) {
-        printf("V: %lu \tP: %lu \tGot: %lu\n", vaddrs[i], paddrs[i],
-            (uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i]));
-
-        assert((uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i])
-            == paddrs[i]);
+        AddressSpace__unmap(ast, start[i], i << 12);
     }
-    AddressSpace__mapVaddr(ast, (void*)12345, (void*)0x8ffff000);
+
+    for (size_t i = 0; i < 10; i++) {
+        for (size_t j = 0; j <= i; j++) {
+            // printf("imhere\n");
+            assert(AddressSpace__getPaddrByVaddr(ast, start[i] + (j << 12))
+                == NULL);
+        }
+    }
 
     return 0;
 }

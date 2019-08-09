@@ -171,6 +171,7 @@ void* AddressRegion__declareForMmap(AddressRegion_t ar, size_t size)
 {
     ContinueRegion_Region_t crrt = ContinueRegion__requestRegion(
         ar->mapRegions, __size4kAlign(size) >> 12);
+    assert(crrt != NULL);
 
     AddressRegion_Region_t region;
     size_t id;
@@ -220,60 +221,65 @@ void AddressRegion__free(AddressRegion_t ar)
 }
 
 // not required
-#include <stdio.h>
+// #include <stdio.h>
 
-int main(int argc, char const* argv[])
-{
-    AddressRegion_t art = AddressRegion__init();
-    AddressRegion__declare(art, STACK, (void*)0x500000, 0x1000);
-    AddressRegion__declare(art, HEAP, (void*)0x100000, 0x1000);
-    for (size_t i = 0; i < 0x1000; i += 0x100) {
-        /* code */
-        assert(
-            AddressRegion__isInRegion(art, (void*)0x500000 - i - 8) == STACK);
-        assert(AddressRegion__isInRegion(art, (void*)0x100000 + i) == HEAP);
-    }
+// int main(int argc, char const* argv[])
+// {
+//     AddressRegion_t art = AddressRegion__init();
+//     AddressRegion__declare(art, STACK, (void*)0x500000, 0x1000);
+//     AddressRegion__declare(art, HEAP, (void*)0x100000, 0x1000);
+//     for (size_t i = 0; i < 0x1000; i += 0x100) {
+//         /* code */
+//         assert(
+//             AddressRegion__isInRegion(art, (void*)0x500000 - i - 8) ==
+//             STACK);
+//         assert(AddressRegion__isInRegion(art, (void*)0x100000 + i) == HEAP);
+//     }
 
-    for (size_t i = 0; i < 0x1000; i += 0x100) {
-        /* code */
-        assert(AddressRegion__isInRegion(art, (void*)0x501000 - i) == 0);
-        // assert(AddressRegion__isInRegion(art,(void *) 0x499000 - i) ==
-        // STACK); assert(AddressRegion__isInStack(art,(void *) 0x501000 - i) ==
-        // STACK);
-    }
+//     for (size_t i = 0; i < 0x1000; i += 0x100) {
+//         /* code */
+//         assert(AddressRegion__isInRegion(art, (void*)0x501000 - i) == 0);
+//         // assert(AddressRegion__isInRegion(art,(void *) 0x499000 - i) ==
+//         // STACK); assert(AddressRegion__isInStack(art,(void *) 0x501000 - i)
+//         ==
+//         // STACK);
+//     }
 
-    for (size_t i = 1; i < 0x1000; i += 0x100) {
-        /* code */
-        assert(AddressRegion__isInRegion(art, (void*)0x501000 - i) == 0);
-        assert(AddressRegion__isInRegion(art, (void*)0x101000 + i) == 0);
-        assert(AddressRegion__isInRegion(art, (void*)0xfff000 - i) == 0);
-        // assert(AddressRegion__isInStack(art,(void *) 0x501000 - i) == STACK);
-    }
+//     for (size_t i = 1; i < 0x1000; i += 0x100) {
+//         /* code */
+//         assert(AddressRegion__isInRegion(art, (void*)0x501000 - i) == 0);
+//         assert(AddressRegion__isInRegion(art, (void*)0x101000 + i) == 0);
+//         assert(AddressRegion__isInRegion(art, (void*)0xfff000 - i) == 0);
+//         // assert(AddressRegion__isInStack(art,(void *) 0x501000 - i) ==
+//         STACK);
+//     }
 
-    // I malloc with stack
-    assert(AddressRegion__resizeByAddr(art, STACK, (void*)0x4fc000) == false);
-    assert(AddressRegion__resizeByAddr(art, STACK, (void*)0x4fd000) == true);
-    assert(AddressRegion__resizeByAddr(art, HEAP, (void*)0x102000) == true);
+//     // I malloc with stack
+//     assert(AddressRegion__resizeByAddr(art, STACK, (void*)0x4fc000) ==
+//     false); assert(AddressRegion__resizeByAddr(art, STACK, (void*)0x4fd000)
+//     == true); assert(AddressRegion__resizeByAddr(art, HEAP, (void*)0x102000)
+//     == true);
 
-    // now I have right to use these region
-    assert(AddressRegion__isInRegion(art, (void*)0x4fd000) == STACK);
-    assert(AddressRegion__isInRegion(art, (void*)0x102000 - 8) == HEAP);
+//     // now I have right to use these region
+//     assert(AddressRegion__isInRegion(art, (void*)0x4fd000) == STACK);
+//     assert(AddressRegion__isInRegion(art, (void*)0x102000 - 8) == HEAP);
 
-    void* start[10];
+//     void* start[10];
 
-    for (size_t i = 0; i < 10; i++) {
+//     for (size_t i = 0; i < 10; i++) {
 
-        start[i] = AddressRegion__declareForMmap(art, (i + 28) << 12);
-        assert(start[i] >= (void*)PROCESS_MMAP_START);
-    }
+//         start[i] = AddressRegion__declareForMmap(art, (i + 28) << 12);
+//         assert(start[i] >= (void*)PROCESS_MMAP_START);
+//     }
 
-    for (size_t i = 0; i < 10; i++) {
-        assert(start[i]
-            == AddressRegion__unmap(art, start[i] + (i << 5), (i + 28) << 12));
-    }
+//     for (size_t i = 0; i < 10; i++) {
+//         assert(start[i]
+//             == AddressRegion__unmap(art, start[i] + (i << 5), (i + 28) <<
+//             12));
+//     }
 
-    assert(AddressRegion__unmap(art, start[5], (5 + 28) << 12) == NULL);
+//     assert(AddressRegion__unmap(art, start[5], (5 + 28) << 12) == NULL);
 
-    /* code */
-    return 0;
-}
+//     /* code */
+//     return 0;
+// }

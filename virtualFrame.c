@@ -178,7 +178,7 @@ void dumpPage(size_t vfref)
     __dumpPageCB(__PageToInt(page), NULL);
 }
 
-static inline void dumpPageTable()
+void dumpPageTable()
 {
     DoubleLinkList__dumpEach(this.pageTable, __dumpPageCB, NULL);
 }
@@ -641,130 +641,130 @@ size_t VirtualFrame__getFrameCapByPage(size_t vfref)
  * Main
  */
 
-#include "frametable.h"
-static struct virtualFrame_Interface_s simpleInterface
-    = { .allocFrame = FrameTable__allocFrame,
-          .allocCspace = FrameTable__allocCspace,
-          .getFrameVaddr = FrameTable__getFrameVaddr,
-          .swapOutFrame = FrameTable__swapOutFrame,
-          .swapInFrame = FrameTable__swapInFrame,
-          .delCap = FrameTable__delCap,
-          .unMapCap = FrameTable__unMapCap,
-          .copyFrameCap = FrameTable__copyFrameCap,
-          .getFrameCap = FrameTable__getFrameCap };
+// #include "frametable.h"
+// static struct virtualFrame_Interface_s simpleInterface
+//     = { .allocFrame = FrameTable__allocFrame,
+//           .allocCspace = FrameTable__allocCspace,
+//           .getFrameVaddr = FrameTable__getFrameVaddr,
+//           .swapOutFrame = FrameTable__swapOutFrame,
+//           .swapInFrame = FrameTable__swapInFrame,
+//           .delCap = FrameTable__delCap,
+//           .unMapCap = FrameTable__unMapCap,
+//           .copyFrameCap = FrameTable__copyFrameCap,
+//           .getFrameCap = FrameTable__getFrameCap };
 
-int main(int argc, char const* argv[])
-{
-    FrameTable__init();
-    VirtualFrame__init(&simpleInterface);
-    size_t ids[32];
-    for (size_t i = 0; i < 32; i++) {
-        ids[i] = VirtualFrame__allocPage();
-        assert(ids[i] == i + 1);
-        VirtualFrame__pinPage(ids[i]);
-        VirtualFrame__unpinPage(ids[i]);
-        // printf("==> Im here %d\n", i);
-    }
+// int main(int argc, char const* argv[])
+// {
+//     FrameTable__init();
+//     VirtualFrame__init(&simpleInterface);
+//     size_t ids[32];
+//     for (size_t i = 0; i < 32; i++) {
+//         ids[i] = VirtualFrame__allocPage();
+//         assert(ids[i] == i + 1);
+//         VirtualFrame__pinPage(ids[i]);
+//         VirtualFrame__unpinPage(ids[i]);
+//         // printf("==> Im here %d\n", i);
+//     }
 
-    // VirtualFrame__pinPage(ids[16]);
-    // printf("\nPretend swapping\n");
-    // for (size_t i = 0; i < 16; i++)
-    // {
-    //     struct WakeContext_s context ;
-    //     context.thread = 0;
-    //     context.pageCount = 1;
-    //     VirtualFrame__requestFrame(&context);
-    // }
-    // dumpPageTable();
+//     // VirtualFrame__pinPage(ids[16]);
+//     // printf("\nPretend swapping\n");
+//     // for (size_t i = 0; i < 16; i++)
+//     // {
+//     //     struct WakeContext_s context ;
+//     //     context.thread = 0;
+//     //     context.pageCount = 1;
+//     //     VirtualFrame__requestFrame(&context);
+//     // }
+//     // dumpPageTable();
 
-    // for (size_t i = 0; i < 16; i++)
-    // {
-    //     assert(__getPageByVfref(ids[i]).frame_id == 0);
-    //     assert(__getPageByVfref(ids[i+16]).frame_id != 0);
-    // }
+//     // for (size_t i = 0; i < 16; i++)
+//     // {
+//     //     assert(__getPageByVfref(ids[i]).frame_id == 0);
+//     //     assert(__getPageByVfref(ids[i+16]).frame_id != 0);
+//     // }
 
-    /***
-     * Simple swaping
-     */
-    for (size_t i = 0; i < 32; i++) {
-        size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
-        VirtualFrame__markPageDirty(ids[i]);
-        *dataPtr = i;
-        VirtualFrame__unpinPage(ids[i]);
-    }
+//     /***
+//      * Simple swaping
+//      */
+//     for (size_t i = 0; i < 32; i++) {
+//         size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
+//         VirtualFrame__markPageDirty(ids[i]);
+//         *dataPtr = i;
+//         VirtualFrame__unpinPage(ids[i]);
+//     }
 
-    for (size_t i = 0; i < 32; i++) {
-        size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
-        assert(*dataPtr == i);
-        VirtualFrame__unpinPage(ids[i]);
-    }
-    for (size_t i = 0; i < 32; i++) {
-        size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
-        VirtualFrame__markPageDirty(ids[i]);
-        *dataPtr *= 4;
-        VirtualFrame__unpinPage(ids[i]);
-    }
+//     for (size_t i = 0; i < 32; i++) {
+//         size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
+//         assert(*dataPtr == i);
+//         VirtualFrame__unpinPage(ids[i]);
+//     }
+//     for (size_t i = 0; i < 32; i++) {
+//         size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
+//         VirtualFrame__markPageDirty(ids[i]);
+//         *dataPtr *= 4;
+//         VirtualFrame__unpinPage(ids[i]);
+//     }
 
-    for (size_t i = 0; i < 32; i++) {
-        size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
-        assert(*dataPtr == i * 4);
-        VirtualFrame__unpinPage(ids[i]);
-    }
+//     for (size_t i = 0; i < 32; i++) {
+//         size_t* dataPtr = VirtualFrame__getVaddrByPageRef(ids[i]);
+//         assert(*dataPtr == i * 4);
+//         VirtualFrame__unpinPage(ids[i]);
+//     }
 
-    /**
-     * Pin Bit and Dirty consistancy
-     * TODO:
-     */
-    for (size_t i = 0; i < 16; i++) {
-        size_t dupId[4];
-        for (size_t j = 0; j < 4; j++) {
-            dupId[j] = VirtualFrame__dupPageMap(ids[i + j]);
-            // printf("==> Dup: %u == %u\n", dupId[j], ids[i + j]);
-            VirtualFrame__pinPage(dupId[j]);
-            VirtualFrame__markPageDirty(dupId[j]);
-            struct mapContext_s map = VirtualFrame__getMapContext(dupId[j]);
-            FrameTable__mapCap(map.pageCap);
-        }
-        for (size_t j = 0; j < 4; j++) {
-            // assert the properties
-            VirtualPage_t page = __getPageByVfref(dupId[j]);
-            // printf("==> Now dup page has info ");
-            // dumpPage(dupId[j]);
-            assert(page.copy_on_write == 0);
-            assert(page.mapped == 1);
-            Frame_t frame = __getFrameById(page.frame_id);
-            assert(frame != NULL);
-            assert(frame->pin == 1);
-            assert(frame->dirty == 1);
-            // assert(frame->virtual_id  == ids[j]);
-            assert(frame->considered == 0);
-            VirtualFrame__unpinPage(dupId[j]);
-        }
-        for (size_t j = 0; j < 4; j++) {
-            VirtualFrame__delPage(dupId[j]);
-        }
+//     /**
+//      * Pin Bit and Dirty consistancy
+//      * TODO:
+//      */
+//     for (size_t i = 0; i < 16; i++) {
+//         size_t dupId[4];
+//         for (size_t j = 0; j < 4; j++) {
+//             dupId[j] = VirtualFrame__dupPageMap(ids[i + j]);
+//             // printf("==> Dup: %u == %u\n", dupId[j], ids[i + j]);
+//             VirtualFrame__pinPage(dupId[j]);
+//             VirtualFrame__markPageDirty(dupId[j]);
+//             struct mapContext_s map = VirtualFrame__getMapContext(dupId[j]);
+//             FrameTable__mapCap(map.pageCap);
+//         }
+//         for (size_t j = 0; j < 4; j++) {
+//             // assert the properties
+//             VirtualPage_t page = __getPageByVfref(dupId[j]);
+//             // printf("==> Now dup page has info ");
+//             // dumpPage(dupId[j]);
+//             assert(page.copy_on_write == 0);
+//             assert(page.mapped == 1);
+//             Frame_t frame = __getFrameById(page.frame_id);
+//             assert(frame != NULL);
+//             assert(frame->pin == 1);
+//             assert(frame->dirty == 1);
+//             // assert(frame->virtual_id  == ids[j]);
+//             assert(frame->considered == 0);
+//             VirtualFrame__unpinPage(dupId[j]);
+//         }
+//         for (size_t j = 0; j < 4; j++) {
+//             VirtualFrame__delPage(dupId[j]);
+//         }
 
-        // dumpPageTable();
-    }
+//         // dumpPageTable();
+//     }
 
-    /**
-     * Delete page will have a clean page table
-     */
+//     /**
+//      * Delete page will have a clean page table
+//      */
 
-    // printf("\nAfter swapping\n");
-    // dumpPageTable();
-    // no matter how much time it swap,
-    //     the data still in the disk
+//     // printf("\nAfter swapping\n");
+//     // dumpPageTable();
+//     // no matter how much time it swap,
+//     //     the data still in the disk
 
-    // no matter how, all the structure will be free
-    for (size_t i = 0; i < 32; i++) {
-        VirtualFrame__delPage(ids[i]);
-        // if (i != 0) VirtualFrame__delPage(share_ids[i]);
-    }
+//     // no matter how, all the structure will be free
+//     for (size_t i = 0; i < 32; i++) {
+//         VirtualFrame__delPage(ids[i]);
+//         // if (i != 0) VirtualFrame__delPage(share_ids[i]);
+//     }
 
-    // here shouldn't dump anything
-    // dumpPageTable();
-    // FrameTable__dump();
+//     // here shouldn't dump anything
+//     // dumpPageTable();
+//     // FrameTable__dump();
 
-    return 0;
-}
+//     return 0;
+// }
