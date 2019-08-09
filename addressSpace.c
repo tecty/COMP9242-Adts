@@ -133,33 +133,6 @@ void AddressSpace__free(addressSpace_t ast)
     free(ast);
 }
 
-int main(int argc, char const* argv[])
-{
-    srand(time(NULL));
-    uint64_t vaddrs[10];
-    uint64_t paddrs[10];
-
-    addressSpace_t ast = AddressSpace__init();
-
-    for (size_t i = 0; i < 10; i++) {
-        vaddrs[i] = rand();
-        paddrs[i] = rand();
-        AddressSpace__mapVaddr(ast, (void*)paddrs[i], (void*)vaddrs[i]);
-        printf("V: %lu \tP: %lu \n", vaddrs[i], paddrs[i]);
-    }
-
-    for (size_t i = 0; i < 10; i++) {
-        printf("V: %lu \tP: %lu \tGot: %lu\n", vaddrs[i], paddrs[i],
-            (uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i]));
-
-        assert((uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i])
-            == paddrs[i]);
-    }
-    AddressSpace__mapVaddr(ast, (void*)12345, (void*)0x8ffff000);
-
-    return 0;
-}
-
 /**
  * @ret: where this region start
  */
@@ -227,4 +200,31 @@ bool AddressSpace__unmap(addressSpace_t ast, void* start, size_t size)
     struct filterPageContext_s context = { .pageArr = pageIdArr };
     ast->pageList
         = DynamicQ__filter(ast->pageList, __filterPageLambda, &context);
+}
+
+int main(int argc, char const* argv[])
+{
+    srand(time(NULL));
+    uint64_t vaddrs[10];
+    uint64_t paddrs[10];
+
+    addressSpace_t ast = AddressSpace__init();
+
+    for (size_t i = 0; i < 10; i++) {
+        vaddrs[i] = rand();
+        paddrs[i] = rand();
+        AddressSpace__mapVaddr(ast, (void*)paddrs[i], (void*)vaddrs[i]);
+        printf("V: %lu \tP: %lu \n", vaddrs[i], paddrs[i]);
+    }
+
+    for (size_t i = 0; i < 10; i++) {
+        printf("V: %lu \tP: %lu \tGot: %lu\n", vaddrs[i], paddrs[i],
+            (uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i]));
+
+        assert((uint64_t)AddressSpace__getPaddrByVaddr(ast, (void*)vaddrs[i])
+            == paddrs[i]);
+    }
+    AddressSpace__mapVaddr(ast, (void*)12345, (void*)0x8ffff000);
+
+    return 0;
 }
