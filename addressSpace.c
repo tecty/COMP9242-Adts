@@ -271,5 +271,6 @@ int main(int argc, char const* argv[])
         }
     }
 
+    dumpPageTable();
     return 0;
 }
