@@ -182,26 +182,39 @@ static bool __filterPageLambda(void* data, void* pdata)
     return true;
 }
 
-bool AddressSpace__unmap(addressSpace_t ast, void* start, size_t size)
+bool AddressSpace__unmap(
+    addressSpace_t ast, void* start, size_t size, DynamicArr_t needFreeArr)
 {
     // re get the start, so the start will be get to the real start
+    assert(needFreeArr != NULL && DynamicArr__getAlloced(needFreeArr) == 0);
+
     start = AddressRegion__unmap(ast->regions, start, size);
-    DynamicArr_t pageIdArr = DynamicArr__init(sizeof(size_t));
+    if (start == NULL)
+        return false;
     for (size_t indent = 0; indent < size; indent += 0x1000) {
 
         size_t pageId
             = (size_t)AddressSpace__getPaddrByVaddr(ast, start + indent);
         if (pageId != 0) {
-            DynamicArr__add(pageIdArr, &pageId);
+            DynamicArr__add(needFreeArr, &pageId);
             // record that address is free
             AddressSpace__mapVaddr(ast, NULL, start + indent);
         }
     }
 
     // so we have all page id here
-    struct filterPageContext_s context = { .pageArr = pageIdArr };
-    ast->pageList
-        = DynamicQ__filter(ast->pageList, __filterPageLambda, &context);
+    return true;
+}
+
+/**
+ * Pure function that filter out all the page in pageList, whcih is in the
+ * allocPageArr
+ */
+DynamicQ_t AddressSpace__delPageHelper(
+    DynamicQ_t pageList, DynamicArr_t needFreeArr)
+{
+    struct filterPageContext_s context = { .pageArr = needFreeArr };
+    return DynamicQ__filter(pageList, __filterPageLambda, &context);
 }
 
 #include "frametable.h"
@@ -246,21 +259,27 @@ int main(int argc, char const* argv[])
     // AddressSpace__mapVaddr(ast, (void*)12345, (void*)0x8ffff000);
 
     void* start[10];
+    DynamicQ_t pageQ[10];
     for (size_t i = 1; i < 10; i++) {
         start[i] = AddressSpace__mmap(ast, i << 12);
+        pageQ[i] = DynamicQ__init(sizeof(size_t));
         assert(start[i] >= (void*)PROCESS_MMAP_START);
         // printf("==> I have alloced start %p\n", start[i]);
         for (size_t j = 0; j < i; j++) {
             assert(AddressSpace__getPaddrByVaddr(ast, start[i] + (j << 12))
                 == NULL);
+            size_t pageId = VirtualFrame__allocPage();
 
-            AddressSpace__mapVaddr(
-                ast, (void*)VirtualFrame__allocPage(), start[i] + (j << 12));
+            AddressSpace__mapVaddr(ast, (void*)pageId, start[i] + (j << 12));
+            DynamicQ__enQueue(pageQ[i], &pageId);
         }
     }
 
-    for (size_t i = 0; i < 10; i++) {
-        AddressSpace__unmap(ast, start[i], i << 12);
+    for (size_t i = 1; i < 10; i++) {
+        DynamicArr_t pageArr = DynamicArr__init(sizeof(size_t));
+        AddressSpace__unmap(ast, start[i], i << 12, pageArr);
+        pageQ[i] = AddressSpace__delPageHelper(pageQ[i], pageArr);
+        assert(DynamicQ__getAlloced(pageQ[i]) == 0);
     }
 
     for (size_t i = 0; i < 10; i++) {

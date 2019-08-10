@@ -482,7 +482,7 @@ mapContext_t VirtualFrame__getMapContext(size_t vfref)
 
 void VirtualFrame__delPage(size_t vfref)
 {
-    printf("==> Try to delepage %lu\n", vfref);
+    // printf("==> Try to delepage %lu\n", vfref);
     VirtualPage_t page = __getPageByVfref(vfref);
     // dumpPage(vfref);
     INTERFACE->delCap(page.cap);
